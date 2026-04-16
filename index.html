@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#f4f6f9">
-<meta name="apple-mobile-web-app-title" content="TrendPulse">
-<title>TrendPulse - Investment Dashboard</title>
+<meta name="apple-mobile-web-app-title" content="CrossPoint">
+<title>CrossPoint</title>
 <style>
 :root {
   --bg: #f4f6f9;
@@ -357,8 +357,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;
   <!-- Sidebar (Desktop) -->
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <svg viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="url(#lg)"/><path d="M8 22L12 12L16 18L20 10L24 16" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><defs><linearGradient id="lg" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#89b4fa"/><stop offset="1" stop-color="#a6e3a1"/></linearGradient></defs></svg>
-      <span>TrendPulse</span>
+      <svg viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="7" fill="#1e1e2e"/><path d="M6 22L13 14L18 18L26 8" stroke="#89b4fa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 12L13 20L18 16L26 24" stroke="#a6e3a1" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/><circle cx="18" cy="17" r="2" fill="#fff"/></svg>
+      <span>CrossPoint</span>
     </div>
     <div class="sidebar-profiles">
       <label>Trader Profile</label>
@@ -375,7 +375,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;
   <div class="main">
     <header class="header">
       <div class="header-left">
-        <span class="header-title header-title-mobile">TrendPulse</span>
+        <span class="header-title header-title-mobile">CrossPoint</span>
         <div class="header-profiles" id="headerProfiles"></div>
       </div>
       <div class="header-right">
@@ -418,7 +418,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;
 
 <script>
 /* ======================================
-   TrendPulse - Investment Dashboard
+   CrossPoint
    Single-file trading system app
    ====================================== */
 
@@ -1607,7 +1607,7 @@ function renderCalculator() {
           </div>
           <div class="form-group">
             <label>Account Size ($)</label>
-            <input type="number" id="calcAccount" placeholder="Enter account size" oninput="updateCalc()">
+            <input type="text" id="calcAccount" placeholder="Enter account size" oninput="formatAccountSize(this);updateCalc()" inputmode="numeric">
           </div>
           <div class="form-group">
             <label>Entry Price ($)</label>
@@ -1655,8 +1655,19 @@ async function lookupCalcTicker() {
   }
 }
 
+function formatAccountSize(input) {
+  const raw = input.value.replace(/[^0-9.]/g, '');
+  const num = parseFloat(raw);
+  if (!raw || isNaN(num)) return;
+  const cursor = input.selectionStart;
+  const oldLen = input.value.length;
+  input.value = num.toLocaleString('en-US');
+  const newLen = input.value.length;
+  input.setSelectionRange(cursor + (newLen - oldLen), cursor + (newLen - oldLen));
+}
+
 function updateCalc() {
-  const account = parseFloat(document.getElementById('calcAccount').value);
+  const account = parseFloat((document.getElementById('calcAccount').value || '').replace(/,/g, ''));
   const entry = parseFloat(document.getElementById('calcEntry').value);
   const atr = parseFloat(document.getElementById('calcATR').value);
 
@@ -2614,14 +2625,14 @@ function checkRTargets() {
 // ─── PWA MANIFEST ───
 function setupPWA() {
   const manifest = {
-    name: 'TrendPulse - Investment Dashboard',
-    short_name: 'TrendPulse',
+    name: 'CrossPoint',
+    short_name: 'CrossPoint',
     start_url: './',
     display: 'standalone',
     background_color: '#f4f6f9',
     theme_color: '#89b4fa',
     icons: [{
-      src: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="url(#g)"/><path d="M128 352L192 192L256 288L320 160L384 256" stroke="#fff" stroke-width="32" stroke-linecap="round" stroke-linejoin="round" fill="none"/><defs><linearGradient id="g" x1="0" y1="0" x2="512" y2="512"><stop stop-color="#89b4fa"/><stop offset="1" stop-color="#a6e3a1"/></linearGradient></defs></svg>'),
+      src: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#1e1e2e"/><path d="M96 352L208 224L288 288L416 128" stroke="#89b4fa" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M96 192L208 320L288 256L416 384" stroke="#a6e3a1" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.7"/><circle cx="288" cy="272" r="16" fill="#fff"/></svg>'),
       sizes: 'any',
       type: 'image/svg+xml'
     }]
@@ -2712,6 +2723,7 @@ window.sortJournal = sortJournal;
 window.addManualJournalEntry = addManualJournalEntry;
 window.exportJournalCSV = exportJournalCSV;
 window.lookupCalcTicker = lookupCalcTicker;
+window.formatAccountSize = formatAccountSize;
 window.toggleNotifications = toggleNotifications;
 window.dismissAlert = dismissAlert;
 window.viewAlertTicker = viewAlertTicker;
