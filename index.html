@@ -744,9 +744,10 @@ async function runScreener() {
   const now = Date.now();
   const MAX_AGE = 86400000; // 24 hours
 
-  // Determine which tickers need fetching (not cached or cache expired)
-  const needsFetch = SCREENER_UNIVERSE.filter(t => !cache[t] || (now - cache[t].ts) > MAX_AGE);
-  const alreadyCached = SCREENER_UNIVERSE.filter(t => cache[t] && (now - cache[t].ts) <= MAX_AGE);
+  // Determine which tickers need fetching (not cached, expired, or missing new fields)
+  const isValid = t => cache[t] && (now - cache[t].ts) <= MAX_AGE && cache[t].trendDir !== undefined;
+  const needsFetch = SCREENER_UNIVERSE.filter(t => !isValid(t));
+  const alreadyCached = SCREENER_UNIVERSE.filter(t => isValid(t));
   const total = needsFetch.length;
 
   showToast(`Screening ${total} tickers (${alreadyCached.length} cached)...`);
