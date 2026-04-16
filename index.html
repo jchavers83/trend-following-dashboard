@@ -2208,24 +2208,26 @@ function initNotifications() {
   updateNotifBtn();
 }
 
+const hasNotifAPI = typeof Notification !== 'undefined';
+
 function updateNotifBtn() {
   const btn = document.getElementById('notifBtn');
   if (!btn) return;
-  const granted = Notification.permission === 'granted';
+  const granted = hasNotifAPI && Notification.permission === 'granted';
   btn.style.borderColor = granted ? 'var(--green)' : '';
   btn.title = granted ? 'Notifications enabled' : 'Enable notifications';
 }
 
 async function toggleNotifications() {
-  if (!('Notification' in window)) {
+  if (!hasNotifAPI) {
     showToast('Notifications not supported in this browser');
     return;
   }
-  if (Notification.permission === 'granted') {
+  if (hasNotifAPI && Notification.permission === 'granted') {
     showToast('Notifications are already enabled');
     return;
   }
-  if (Notification.permission === 'denied') {
+  if (hasNotifAPI && Notification.permission === 'denied') {
     showToast('Notifications blocked. Enable in browser settings.');
     return;
   }
@@ -2309,7 +2311,7 @@ function checkForNewCrossovers() {
     if (dot) dot.classList.add('show');
 
     // Send browser notifications
-    if (Notification.permission === 'granted') {
+    if (hasNotifAPI && Notification.permission === 'granted') {
       newCrosses.forEach(cross => {
         const direction = cross.type === 'bullish' ? 'BULLISH' : 'BEARISH';
         const action = cross.type === 'bullish' ? 'MA10 crossed ABOVE MA20' : 'MA10 crossed BELOW MA20';
@@ -2586,7 +2588,7 @@ function checkRTargets() {
           playAlertSound('cross');
 
           // Browser notification
-          if (Notification.permission === 'granted') {
+          if (hasNotifAPI && Notification.permission === 'granted') {
             const n = new Notification(`${r}R Target Hit: ${trade.ticker}`, {
               body: `${profileName}'s ${trade.ticker} position reached ${r}R!\nPrice: $${currentPrice.toFixed(2)} | P&L: +$${dollarProfit.toFixed(2)}`,
               icon: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="#26a69a"/><text x="32" y="44" text-anchor="middle" font-size="24" fill="#fff" font-weight="bold">' + r + 'R</text></svg>'),
@@ -2640,6 +2642,7 @@ function handleResize() {
 
 // ─── INIT ───
 async function init() {
+  try {
   setupPWA();
   applyTheme();
   loadCachedScreener();
@@ -2687,6 +2690,7 @@ async function init() {
     document.getElementById('marketDot').className = 'market-dot ' + (open?'open':'closed');
     document.getElementById('marketStatus').textContent = open ? 'Market Open' : 'Market Closed';
   }, 60000);
+  } catch(e) { console.error('Init error:', e); }
 }
 
 // Make functions globally accessible
