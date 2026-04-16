@@ -59,9 +59,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;
 
 /* Sidebar - Desktop */
 .sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);height:100%;background:var(--card);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-right:1px solid var(--card-border);display:flex;flex-direction:column;z-index:100;transition:background var(--transition)}
-.sidebar-logo{padding:20px 18px 12px;display:flex;align-items:center;gap:10px}
-.sidebar-logo svg{width:32px;height:32px}
-.sidebar-logo span{font-size:18px;font-weight:700;letter-spacing:-0.5px}
+.sidebar-logo{padding:22px 18px 14px;display:flex;align-items:center;gap:12px}
+.sidebar-logo svg{width:40px;height:40px}
+.sidebar-logo span{font-size:22px;font-weight:800;letter-spacing:-0.5px}
 .sidebar-profiles{padding:6px 12px 12px}
 .sidebar-profiles label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);display:block;margin-bottom:6px;padding-left:4px}
 .profile-btns{display:flex;gap:4px}
@@ -81,7 +81,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
 .header{height:var(--header-h);display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-bottom:1px solid var(--card-border);background:var(--card);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);flex-shrink:0;z-index:90}
 .header-left{display:flex;align-items:center;gap:12px}
-.header-title{font-size:16px;font-weight:700}
+.header-title{font-size:20px;font-weight:800;letter-spacing:-0.5px}
 .header-profiles{display:none}
 .header-right{display:flex;align-items:center;gap:8px}
 .icon-btn{width:36px;height:36px;border-radius:var(--radius-sm);border:1px solid var(--card-border);background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);transition:all var(--transition)}
@@ -709,10 +709,27 @@ async function fetchQuickScreen(ticker) {
   const ma50 = closes.slice(-50).reduce((a,b) => a+b, 0) / 50;
   const aboveMa50 = closes[closes.length-1] > ma50;
 
+  // Calculate MA10/MA20 trend direction and days in trend
+  const ma10Arr = calcSMAArray(closes, 10);
+  const ma20Arr = calcSMAArray(closes, 20);
+  const ma10 = ma10Arr[ma10Arr.length-1];
+  const ma20 = ma20Arr[ma20Arr.length-1];
+  const trendDir = (ma10 != null && ma20 != null) ? (ma10 > ma20 ? 'LONG' : 'SHORT') : 'NEUTRAL';
+  // Count trading days since last crossover
+  let trendDays = 0;
+  for (let i = ma10Arr.length - 1; i > 0; i--) {
+    if (ma10Arr[i]==null||ma10Arr[i-1]==null||ma20Arr[i]==null||ma20Arr[i-1]==null) break;
+    const currAbove = ma10Arr[i] > ma20Arr[i];
+    const prevAbove = ma10Arr[i-1] > ma20Arr[i-1];
+    if (currAbove !== prevAbove) break;
+    trendDays++;
+  }
+
   return {
     ticker,
     price: closes[closes.length-1],
     perf6m, perf3m, avgVol, marketCap: mCap, aboveMa50,
+    trendDir, trendDays,
     ts: Date.now()
   };
 }
@@ -768,7 +785,7 @@ async function runScreener() {
 
   // Sort by 6-month performance and take top 15
   qualified.sort((a,b) => b.perf6m - a.perf6m);
-  state.screenerResults = qualified.slice(0, 15);
+  state.screenerResults = qualified.slice(0, 25);
   state.screenerRunning = false;
   state.screenerProgress = 100;
 
@@ -1438,17 +1455,17 @@ function renderSignalGrid(tickers) {
 function renderScreenerTable() {
   let rows = '';
   state.screenerResults.forEach(r => {
+    const sigClass = r.trendDir === 'LONG' ? 'long' : r.trendDir === 'SHORT' ? 'short' : 'neutral';
     rows += `<tr onclick="navigateTo('chart',{ticker:'${r.ticker}'})">
       <td style="font-weight:800;font-family:var(--mono)">${r.ticker}</td>
       <td style="font-family:var(--mono)">$${fmt(r.price)}</td>
       <td style="font-family:var(--mono);color:#40a02b">+${r.perf6m.toFixed(1)}%</td>
-      <td style="font-family:var(--mono)">${r.perf3m ? '+' + r.perf3m.toFixed(1) + '%' : '--'}</td>
-      <td style="font-family:var(--mono)">${r.marketCap ? fmtB(r.marketCap) : '--'}</td>
-      <td style="font-family:var(--mono)">${r.avgVol ? (r.avgVol/1000).toFixed(0) + 'K' : '--'}</td>
+      <td><span class="signal-badge ${sigClass}">${r.trendDir || '--'}</span></td>
+      <td style="font-family:var(--mono)">${r.trendDays != null ? r.trendDays + 'd' : '--'}</td>
     </tr>`;
   });
   return `<div class="screener-table-wrap"><table class="screener-table">
-    <thead><tr><th>Ticker</th><th>Price</th><th>6M Perf</th><th>3M Perf</th><th>Mkt Cap</th><th>Avg Vol</th></tr></thead>
+    <thead><tr><th>Ticker</th><th>Price</th><th>6M Perf</th><th>Signal</th><th>Trend Days</th></tr></thead>
     <tbody>${rows}</tbody>
   </table></div>`;
 }
