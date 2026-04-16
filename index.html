@@ -1322,6 +1322,9 @@ function renderDashboard() {
   const allTickers = getAllTickers();
   const tickerDataArr = allTickers.map(t => state.tickerData[t]).filter(Boolean);
 
+  const loadedCount = tickerDataArr.length;
+  const totalCount = allTickers.length;
+  const isLoading = loadedCount < totalCount;
   const longCount = tickerDataArr.filter(d => d.signal === 'LONG').length;
   const shortCount = tickerDataArr.filter(d => d.signal === 'SHORT').length;
   const newCrossCount = tickerDataArr.filter(d => d.isNewCross).length;
@@ -1334,6 +1337,7 @@ function renderDashboard() {
 
   content.innerHTML = `
     <div class="screen active" id="screen-dashboard">
+      ${isLoading ? `<div class="loading"><div class="loading-spinner"></div>Loading market data... ${loadedCount}/${totalCount}</div>` : ''}
       <div class="summary-row">
         <div class="summary-card"><div class="label">Long Signals</div><div class="value green">${longCount}</div></div>
         <div class="summary-card"><div class="label">Short Signals</div><div class="value red">${shortCount}</div></div>
@@ -2658,8 +2662,8 @@ async function init() {
   // Window resize
   window.addEventListener('resize', handleResize);
 
-  // Load initial data
-  await refreshAllTickers();
+  // Load initial data (don't await - let UI render immediately while data loads)
+  refreshAllTickers();
 
   // Auto-refresh every 10 minutes (includes IBKR sync)
   setInterval(() => {
