@@ -1461,11 +1461,11 @@ function renderScreenerTable() {
       <td style="font-family:var(--mono)">$${fmt(r.price)}</td>
       <td style="font-family:var(--mono);color:#40a02b">+${r.perf6m.toFixed(1)}%</td>
       <td><span class="signal-badge ${sigClass}">${r.trendDir || '--'}</span></td>
-      <td style="font-family:var(--mono)">${r.trendDays != null ? r.trendDays + 'd' : '--'}</td>
+      <td style="font-size:12px;color:var(--text3)">${r.trendDays != null ? r.trendDays + 'd' : '--'}</td>
     </tr>`;
   });
   return `<div class="screener-table-wrap"><table class="screener-table">
-    <thead><tr><th>Ticker</th><th>Price</th><th>6M Perf</th><th>Signal</th><th>Trend Days</th></tr></thead>
+    <thead><tr><th>Ticker</th><th>Price</th><th>6M Perf</th><th>Signal</th><th>Cross</th></tr></thead>
     <tbody>${rows}</tbody>
   </table></div>`;
 }
