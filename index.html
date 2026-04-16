@@ -1,0 +1,2730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#f4f6f9">
+<meta name="apple-mobile-web-app-title" content="TrendPulse">
+<title>TrendPulse - Investment Dashboard</title>
+<style>
+:root {
+  --bg: #f4f6f9;
+  --bg2: #eaecf1;
+  --card: rgba(255,255,255,0.72);
+  --card-solid: #fff;
+  --card-border: rgba(137,180,250,0.25);
+  --text: #1e1e2e;
+  --text2: #585b70;
+  --text3: #9399b2;
+  --blue: #89b4fa;
+  --blue2: #74c7ec;
+  --green: #a6e3a1;
+  --green2: #94e2d5;
+  --teal: #94e2d5;
+  --red: #f38ba8;
+  --amber: #f9e2af;
+  --amber2: #fab387;
+  --surface: rgba(255,255,255,0.55);
+  --shadow: 0 2px 16px rgba(30,30,46,0.06);
+  --shadow2: 0 4px 24px rgba(30,30,46,0.10);
+  --radius: 14px;
+  --radius-sm: 10px;
+  --mono: 'SF Mono','Inter Tight','JetBrains Mono','Fira Code','Cascadia Code','Menlo','Consolas',ui-monospace,monospace;
+  --sans: 'Inter','SF Pro Display','SF Pro Text',-apple-system,BlinkMacSystemFont,'Segoe UI Variable Display','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --sidebar-w: 220px;
+  --header-h: 56px;
+  --botnav-h: 68px;
+  --transition: 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+[data-theme="dark"] {
+  --bg: #1e1e2e;
+  --bg2: #181825;
+  --card: rgba(49,50,68,0.72);
+  --card-solid: #313244;
+  --card-border: rgba(137,180,250,0.18);
+  --text: #cdd6f4;
+  --text2: #a6adc8;
+  --text3: #6c7086;
+  --surface: rgba(49,50,68,0.55);
+  --shadow: 0 2px 16px rgba(0,0,0,0.18);
+  --shadow2: 0 4px 24px rgba(0,0,0,0.25);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{height:100%;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;overflow:hidden;transition:background var(--transition),color var(--transition);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;font-feature-settings:'cv01','cv02','cv03','cv04';letter-spacing:-0.011em;font-optical-sizing:auto}
+#app{display:flex;height:100dvh;width:100%;position:relative}
+
+/* Sidebar - Desktop */
+.sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);height:100%;background:var(--card);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-right:1px solid var(--card-border);display:flex;flex-direction:column;z-index:100;transition:background var(--transition)}
+.sidebar-logo{padding:20px 18px 12px;display:flex;align-items:center;gap:10px}
+.sidebar-logo svg{width:32px;height:32px}
+.sidebar-logo span{font-size:18px;font-weight:700;letter-spacing:-0.5px}
+.sidebar-profiles{padding:6px 12px 12px}
+.sidebar-profiles label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);display:block;margin-bottom:6px;padding-left:4px}
+.profile-btns{display:flex;gap:4px}
+.profile-btn{flex:1;padding:7px 0;border:1.5px solid var(--card-border);border-radius:var(--radius-sm);background:transparent;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;transition:all var(--transition);font-family:var(--sans)}
+.profile-btn.active{background:var(--blue);color:#1e1e2e;border-color:var(--blue)}
+.sidebar-nav{flex:1;padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);color:var(--text2);font-size:13.5px;font-weight:500;cursor:pointer;transition:all var(--transition);border:none;background:none;width:100%;text-align:left;font-family:var(--sans)}
+.nav-item:hover{background:var(--surface);color:var(--text)}
+.nav-item.active{background:var(--blue);color:#1e1e2e}
+.nav-item svg{width:18px;height:18px;flex-shrink:0}
+.sidebar-footer{padding:12px 16px;border-top:1px solid var(--card-border);font-size:11px;color:var(--text3)}
+.market-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.market-dot.open{background:#a6e3a1}
+.market-dot.closed{background:#f38ba8}
+
+/* Main Content */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.header{height:var(--header-h);display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-bottom:1px solid var(--card-border);background:var(--card);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);flex-shrink:0;z-index:90}
+.header-left{display:flex;align-items:center;gap:12px}
+.header-title{font-size:16px;font-weight:700}
+.header-profiles{display:none}
+.header-right{display:flex;align-items:center;gap:8px}
+.icon-btn{width:36px;height:36px;border-radius:var(--radius-sm);border:1px solid var(--card-border);background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);transition:all var(--transition)}
+.icon-btn:hover{background:var(--blue);color:#1e1e2e;border-color:var(--blue)}
+.refresh-spin{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.content{flex:1;overflow-y:auto;overflow-x:hidden;padding:20px;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
+.content::-webkit-scrollbar{width:6px}
+.content::-webkit-scrollbar-thumb{background:var(--text3);border-radius:3px}
+
+/* Bottom Nav - Mobile */
+.botnav{display:none;height:var(--botnav-h);background:var(--card);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--card-border);padding:0 4px env(safe-area-inset-bottom);z-index:100}
+.botnav-inner{display:flex;height:100%;align-items:center}
+.botnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 2px;border:none;background:none;color:var(--text3);font-size:10px;font-weight:500;cursor:pointer;transition:all var(--transition);font-family:var(--sans);-webkit-tap-highlight-color:transparent}
+.botnav-item.active{color:var(--blue)}
+.botnav-item svg{width:20px;height:20px}
+
+/* Screen transitions */
+.screen{display:none;animation:fadeIn 0.3s ease}
+.screen.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* Summary Cards Row */
+.summary-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.summary-card{background:var(--card);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--card-border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);transition:all var(--transition)}
+.summary-card .label{font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:4px}
+.summary-card .value{font-size:24px;font-weight:700;font-family:var(--mono)}
+.summary-card .value.green{color:#40a02b}
+.summary-card .value.red{color:#d20f39}
+.summary-card .value.amber{color:#df8e1d}
+
+/* Signal Cards Grid */
+.signal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.signal-card{background:var(--card);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:2px solid var(--card-border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);cursor:pointer;transition:all var(--transition);position:relative;overflow:hidden}
+.signal-card:hover{box-shadow:var(--shadow2);transform:translateY(-2px)}
+.signal-card.long{border-color:rgba(166,227,161,0.5)}
+.signal-card.long::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#a6e3a1,#94e2d5)}
+.signal-card.short{border-color:rgba(243,139,168,0.5)}
+.signal-card.short::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#f38ba8,#fab387)}
+.signal-card .ticker-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.signal-card .ticker{font-size:18px;font-weight:800;font-family:var(--mono)}
+.signal-card .name{font-size:11px;color:var(--text3);margin-bottom:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.signal-card .price{font-size:22px;font-weight:700;font-family:var(--mono)}
+.signal-card .change{font-size:13px;font-family:var(--mono);font-weight:600}
+.signal-card .change.up{color:#40a02b}
+.signal-card .change.down{color:#d20f39}
+.signal-badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:0.5px}
+.signal-badge.long{background:rgba(166,227,161,0.2);color:#40a02b}
+.signal-badge.short{background:rgba(243,139,168,0.2);color:#d20f39}
+.signal-badge.neutral{background:rgba(147,153,178,0.15);color:var(--text3)}
+.new-cross-badge{position:absolute;top:10px;right:10px;background:linear-gradient(135deg,#fab387,#f9e2af);color:#1e1e2e;padding:4px 8px;border-radius:6px;font-size:10px;font-weight:800;letter-spacing:0.5px;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(249,226,175,0.5)}50%{box-shadow:0 0 12px 4px rgba(249,226,175,0.3)}}
+.ma-info{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--card-border)}
+.ma-info .ma-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px}
+.ma-info .ma-val{font-size:13px;font-family:var(--mono);font-weight:600}
+.days-since{font-size:11px;color:var(--text3);margin-top:6px}
+
+/* Section headers */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin:24px 0 12px}
+.section-header h2{font-size:16px;font-weight:700}
+.section-header .count{font-size:12px;color:var(--text3);font-family:var(--mono)}
+
+/* Chart Screen */
+.chart-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.chart-header .back-btn{width:36px;height:36px;border-radius:var(--radius-sm);border:1px solid var(--card-border);background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);flex-shrink:0}
+.chart-header .chart-ticker{font-size:24px;font-weight:800;font-family:var(--mono)}
+.chart-header .chart-name{font-size:13px;color:var(--text3)}
+.chart-header .chart-price{font-size:28px;font-weight:700;font-family:var(--mono);margin-left:auto}
+.chart-container{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:16px}
+.chart-canvas-wrap{position:relative;width:100%;height:500px}
+.chart-canvas-wrap canvas{width:100%;height:100%}
+.chart-legend{display:flex;gap:16px;margin-top:10px;font-size:12px}
+.chart-legend .legend-item{display:flex;align-items:center;gap:5px}
+.chart-legend .legend-dot{width:10px;height:3px;border-radius:2px}
+.chart-actions{display:flex;gap:8px;flex-wrap:wrap}
+.chart-info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
+.chart-info-card{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius-sm);padding:12px}
+.chart-info-card .label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px}
+.chart-info-card .val{font-size:16px;font-weight:700;font-family:var(--mono);margin-top:2px}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all var(--transition);font-family:var(--sans)}
+.btn-primary{background:var(--blue);color:#1e1e2e}
+.btn-primary:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.btn-green{background:var(--green);color:#1e1e2e}
+.btn-green:hover{filter:brightness(1.1)}
+.btn-red{background:var(--red);color:#1e1e2e}
+.btn-amber{background:var(--amber);color:#1e1e2e}
+.btn-outline{background:transparent;border:1.5px solid var(--card-border);color:var(--text2)}
+.btn-outline:hover{border-color:var(--blue);color:var(--blue)}
+.btn-sm{padding:6px 12px;font-size:12px}
+
+/* Calculator */
+.calc-wrap{max-width:560px;margin:0 auto}
+.calc-card{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow)}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px}
+.form-group input,.form-group textarea,.form-group select{width:100%;padding:10px 14px;border:1.5px solid var(--card-border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:15px;font-family:var(--mono);transition:border-color var(--transition);outline:none}
+.form-group input:focus,.form-group textarea:focus{border-color:var(--blue)}
+.form-group input[readonly]{opacity:0.7;cursor:default}
+.form-group .hint{font-size:11px;color:var(--text3);margin-top:3px}
+.calc-outputs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:20px 0}
+.calc-output{background:var(--bg2);border-radius:var(--radius-sm);padding:12px}
+.calc-output .label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px}
+.calc-output .val{font-size:18px;font-weight:700;font-family:var(--mono);margin-top:2px}
+.risk-warning{padding:10px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;margin:12px 0}
+.risk-warning.green{background:rgba(166,227,161,0.15);color:#40a02b;border:1px solid rgba(166,227,161,0.3)}
+.risk-warning.yellow{background:rgba(249,226,175,0.15);color:#df8e1d;border:1px solid rgba(249,226,175,0.3)}
+.risk-warning.red{background:rgba(243,139,168,0.15);color:#d20f39;border:1px solid rgba(243,139,168,0.3)}
+
+/* Portfolio */
+.trade-card{background:var(--card);border:2px solid rgba(166,227,161,0.3);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin-bottom:12px;transition:all var(--transition)}
+.trade-card .trade-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.trade-card .trade-ticker{font-size:20px;font-weight:800;font-family:var(--mono)}
+.trade-card .trade-date{font-size:11px;color:var(--text3)}
+.trade-card .trade-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:14px}
+.trade-card .stat{background:var(--bg2);border-radius:var(--radius-sm);padding:8px 10px}
+.trade-card .stat .label{font-size:10px;color:var(--text3);text-transform:uppercase}
+.trade-card .stat .val{font-size:14px;font-weight:700;font-family:var(--mono)}
+.tighten-alert{background:linear-gradient(135deg,rgba(249,226,175,0.15),rgba(250,179,135,0.15));border:1.5px solid rgba(249,226,175,0.4);border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;font-weight:700;color:#df8e1d;margin:10px 0;animation:pulse 2s ease-in-out infinite}
+.pyramid-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:12px}
+.pyramid-table th{text-align:left;padding:6px 8px;border-bottom:1px solid var(--card-border);font-size:10px;text-transform:uppercase;color:var(--text3);letter-spacing:0.5px}
+.pyramid-table td{padding:6px 8px;border-bottom:1px solid var(--card-border);font-family:var(--mono);font-size:12px}
+.pyramid-table tr.next-add{background:rgba(249,226,175,0.1)}
+.pyramid-status{display:inline-block;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:0.3px}
+.pyramid-status.filled{background:rgba(166,227,161,0.2);color:#40a02b}
+.pyramid-status.next{background:rgba(249,226,175,0.2);color:#df8e1d}
+.pyramid-status.pending{background:rgba(147,153,178,0.1);color:var(--text3)}
+.trade-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+
+/* Checklist */
+.checklist-wrap{max-width:600px;margin:0 auto}
+.checklist-card{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow)}
+.checklist-ticker{text-align:center;margin-bottom:20px}
+.checklist-ticker .ticker{font-size:24px;font-weight:800;font-family:var(--mono)}
+.progress-bar{height:6px;background:var(--bg2);border-radius:3px;margin:16px 0;overflow:hidden}
+.progress-bar .fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:3px;transition:width 0.4s ease}
+.checklist-items{list-style:none}
+.checklist-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--card-border);cursor:pointer;transition:background var(--transition);border-radius:var(--radius-sm);padding-left:8px;padding-right:8px}
+.checklist-item:hover{background:var(--surface)}
+.checklist-item .check-box{width:22px;height:22px;border:2px solid var(--card-border);border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all var(--transition);margin-top:1px}
+.checklist-item.checked .check-box{background:var(--green);border-color:var(--green)}
+.checklist-item .check-text{font-size:14px;line-height:1.4;color:var(--text2)}
+.checklist-item.checked .check-text{color:var(--text3);text-decoration:line-through}
+.confirmed-banner{background:linear-gradient(135deg,var(--green),var(--teal));color:#1e1e2e;padding:16px 20px;border-radius:var(--radius);text-align:center;font-weight:700;font-size:15px;margin-top:20px;display:none}
+.confirmed-banner.show{display:block;animation:fadeIn 0.5s ease}
+
+/* Journal */
+.journal-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px}
+.journal-stat{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:14px;text-align:center}
+.journal-stat .label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px}
+.journal-stat .val{font-size:20px;font-weight:700;font-family:var(--mono);margin-top:4px}
+.journal-table-wrap{overflow-x:auto;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.journal-table{width:100%;border-collapse:collapse;font-size:13px;min-width:700px}
+.journal-table th{text-align:left;padding:10px 12px;border-bottom:2px solid var(--card-border);font-size:11px;text-transform:uppercase;color:var(--text3);letter-spacing:0.5px;cursor:pointer;white-space:nowrap;user-select:none}
+.journal-table th:hover{color:var(--blue)}
+.journal-table td{padding:10px 12px;border-bottom:1px solid var(--card-border);font-family:var(--mono);font-size:12px}
+.journal-table tr:hover{background:var(--surface)}
+.rules-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700}
+.rules-badge.yes{background:rgba(166,227,161,0.2);color:#40a02b}
+.rules-badge.no{background:rgba(243,139,168,0.2);color:#d20f39}
+
+/* Screener section */
+.screener-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.screener-progress{height:4px;background:var(--bg2);border-radius:2px;margin-bottom:16px;overflow:hidden}
+.screener-progress .fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--teal));transition:width 0.3s ease}
+.screener-table-wrap{overflow-x:auto;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.screener-table{width:100%;border-collapse:collapse;font-size:13px;min-width:600px}
+.screener-table th{text-align:left;padding:10px 12px;border-bottom:2px solid var(--card-border);font-size:11px;text-transform:uppercase;color:var(--text3);letter-spacing:0.5px;white-space:nowrap}
+.screener-table td{padding:8px 12px;border-bottom:1px solid var(--card-border);font-family:var(--mono);font-size:12px}
+.screener-table tr:hover{background:var(--surface)}
+
+/* Modal overlay */
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.show{display:flex}
+.modal{background:var(--card-solid);border-radius:var(--radius);padding:24px;max-width:480px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:var(--shadow2)}
+.modal h3{font-size:18px;margin-bottom:16px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+
+/* Loading */
+.loading{display:flex;align-items:center;justify-content:center;padding:40px;color:var(--text3)}
+.loading-spinner{width:24px;height:24px;border:3px solid var(--card-border);border-top-color:var(--blue);border-radius:50%;animation:spin 0.8s linear infinite;margin-right:10px}
+
+/* Toast */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--card-solid);border:1px solid var(--card-border);border-radius:var(--radius-sm);padding:10px 18px;font-size:13px;font-weight:600;box-shadow:var(--shadow2);z-index:600;opacity:0;transition:opacity 0.3s;pointer-events:none}
+.toast.show{opacity:1}
+
+/* Alert Banner */
+.alert-banner{position:fixed;top:0;left:0;right:0;z-index:700;transform:translateY(-100%);transition:transform 0.4s cubic-bezier(0.4,0,0.2,1);pointer-events:none}
+.alert-banner.show{transform:translateY(0);pointer-events:auto}
+.alert-banner-inner{background:linear-gradient(135deg,#fab387,#f9e2af);color:#1e1e2e;padding:14px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 20px rgba(250,179,135,0.3)}
+.alert-banner-inner .alert-icon{font-size:20px;flex-shrink:0;animation:alertPulse 1s ease-in-out infinite alternate}
+@keyframes alertPulse{from{transform:scale(1)}to{transform:scale(1.15)}}
+.alert-banner-inner .alert-text{flex:1;font-weight:600;font-size:13px;line-height:1.4}
+.alert-banner-inner .alert-text strong{font-weight:800;font-size:14px}
+.alert-banner-inner .alert-dismiss{background:rgba(30,30,46,0.15);border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;color:#1e1e2e;font-family:var(--sans)}
+.alert-banner-inner .alert-dismiss:hover{background:rgba(30,30,46,0.25)}
+.alert-banner-inner .alert-view{background:#1e1e2e;color:#f9e2af;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans)}
+/* IBKR Broker Connection */
+.ibkr-section{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin-bottom:16px}
+.ibkr-section h3{font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.ibkr-status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.ibkr-status-dot.connected{background:#26a69a;box-shadow:0 0 6px rgba(38,166,154,0.5)}
+.ibkr-status-dot.disconnected{background:var(--text3)}
+.ibkr-connect-row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px}
+.ibkr-connect-row .form-group{margin-bottom:0;flex:1;min-width:200px}
+.ibkr-account-info{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:12px}
+.ibkr-account-info .stat{background:var(--bg2);border-radius:var(--radius-sm);padding:10px}
+.ibkr-account-info .stat .label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px}
+.ibkr-account-info .stat .val{font-size:15px;font-weight:700;font-family:var(--mono);margin-top:2px}
+.ibkr-badge{display:inline-flex;align-items:center;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:800;letter-spacing:0.5px;background:rgba(137,180,250,0.2);color:var(--blue)}
+.ibkr-pos-card{background:var(--card);border:2px solid rgba(137,180,250,0.3);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:10px}
+.ibkr-pos-card .pos-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.ibkr-pos-card .pos-ticker{font-size:18px;font-weight:800;font-family:var(--mono)}
+.ibkr-pos-card .pos-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
+.ibkr-pos-card .stat{background:var(--bg2);border-radius:var(--radius-sm);padding:8px 10px}
+.ibkr-pos-card .stat .label{font-size:10px;color:var(--text3);text-transform:uppercase}
+.ibkr-pos-card .stat .val{font-size:13px;font-weight:700;font-family:var(--mono)}
+
+.notif-dot{width:6px;height:6px;background:#f38ba8;border-radius:50%;position:absolute;top:6px;right:6px;display:none}
+.notif-dot.show{display:block;animation:pulse 2s ease-in-out infinite}
+
+/* Responsive */
+@media(max-width:768px){
+  .sidebar{display:none}
+  .botnav{display:block}
+  .header-profiles{display:flex;gap:4px}
+  .header-profiles .profile-btn{padding:5px 10px;font-size:11px}
+  .content{padding:14px}
+  .summary-row{grid-template-columns:1fr 1fr}
+  .signal-grid{grid-template-columns:1fr}
+  .chart-canvas-wrap{height:360px}
+  .chart-header .chart-price{margin-left:0;margin-top:4px}
+  .chart-header{flex-direction:column;align-items:flex-start}
+  .calc-outputs{grid-template-columns:1fr}
+  .journal-summary{grid-template-columns:1fr 1fr}
+  .trade-card .trade-stats{grid-template-columns:1fr 1fr}
+  .chart-info-grid{grid-template-columns:1fr 1fr}
+  .toast{bottom:calc(var(--botnav-h) + 12px)}
+}
+@media(min-width:769px){
+  .header-title-mobile{display:none}
+}
+
+/* Desktop signal table */
+@media(min-width:769px){
+  .signal-grid.table-mode{display:block}
+  .signal-grid.table-mode .signal-card{display:none}
+}
+.signal-table-wrap{display:none;overflow-x:auto;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--shadow)}
+@media(min-width:769px){
+  .signal-table-wrap{display:block}
+  .signal-grid{display:none}
+}
+@media(max-width:768px){
+  .signal-table-wrap{display:none}
+  .signal-grid{display:grid}
+}
+.signal-table{width:100%;border-collapse:collapse;font-size:13px}
+.signal-table th{text-align:left;padding:10px 12px;border-bottom:2px solid var(--card-border);font-size:11px;text-transform:uppercase;color:var(--text3);letter-spacing:0.5px;white-space:nowrap}
+.signal-table td{padding:8px 12px;border-bottom:1px solid var(--card-border)}
+.signal-table tr{cursor:pointer;transition:background var(--transition)}
+.signal-table tr:hover{background:var(--surface)}
+.signal-table .ticker-cell{font-weight:800;font-family:var(--mono);font-size:14px}
+.signal-table .price-cell{font-family:var(--mono);font-weight:600}
+.signal-table .change-cell{font-family:var(--mono);font-weight:600}
+.signal-table .ma-cell{font-family:var(--mono);font-size:12px}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Sidebar (Desktop) -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <svg viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="url(#lg)"/><path d="M8 22L12 12L16 18L20 10L24 16" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><defs><linearGradient id="lg" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#89b4fa"/><stop offset="1" stop-color="#a6e3a1"/></linearGradient></defs></svg>
+      <span>TrendPulse</span>
+    </div>
+    <div class="sidebar-profiles">
+      <label>Trader Profile</label>
+      <div class="profile-btns" id="sidebarProfiles"></div>
+    </div>
+    <div class="sidebar-nav" id="sidebarNav"></div>
+    <div class="sidebar-footer">
+      <span class="market-dot" id="marketDot"></span>
+      <span id="marketStatus">Market Closed</span>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="header">
+      <div class="header-left">
+        <span class="header-title header-title-mobile">TrendPulse</span>
+        <div class="header-profiles" id="headerProfiles"></div>
+      </div>
+      <div class="header-right">
+        <button class="icon-btn" id="notifBtn" title="Enable notifications" style="position:relative" onclick="toggleNotifications()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="notif-dot" id="notifDot"></span>
+        </button>
+        <button class="icon-btn" id="refreshBtn" title="Refresh data">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+        </button>
+        <button class="icon-btn" id="themeBtn" title="Toggle dark mode">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="content" id="content">
+      <!-- Screens injected by JS -->
+    </div>
+
+    <!-- Bottom Nav (Mobile) -->
+    <nav class="botnav">
+      <div class="botnav-inner" id="botNav"></div>
+    </nav>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalContent"></div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="alert-banner" id="alertBanner">
+  <div class="alert-banner-inner">
+    <span class="alert-icon">&#9888;</span>
+    <div class="alert-text" id="alertText"></div>
+    <button class="alert-view" id="alertView" onclick="viewAlertTicker()">View</button>
+    <button class="alert-dismiss" onclick="dismissAlert()">Dismiss</button>
+  </div>
+</div>
+
+<script>
+/* ======================================
+   TrendPulse - Investment Dashboard
+   Single-file trading system app
+   ====================================== */
+
+// ─── CONSTANTS ───
+const PROFILES = ['Josh','Nehemiah','Levi'];
+const CORE_TICKERS = ['QQQ','SPY','DIA','IWM'];
+const DIVERSIFIERS = ['IBIT','USO','SLV','GLD','CPER','PPLT'];
+const PERMANENT_TICKERS = [...CORE_TICKERS, ...DIVERSIFIERS];
+
+const SCREENS = [
+  {id:'dashboard',label:'Signals',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>'},
+  {id:'chart',label:'Chart',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>'},
+  {id:'calculator',label:'Size Calc',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="14" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/></svg>'},
+  {id:'portfolio',label:'Portfolio',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>'},
+  {id:'checklist',label:'Checklist',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>'},
+  {id:'journal',label:'Journal',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>'}
+];
+
+const CHECKLIST_ITEMS = [
+  'The asset is in the approved ticker universe',
+  'For a long: the 10-day MA is above the 20-day MA on the close',
+  'For a short: the 10-day MA is below the 20-day MA on the close',
+  'ATR has been calculated and the 3x ATR stop is defined',
+  'Per-trade risk is 0.5% of equity or less',
+  'Correlations are reasonable with no over-exposure to similar positions',
+  'You are emotionally calm and objective',
+  'All numbers have been entered into the position size calculator',
+  'There is a clear exit plan defined including both the stop loss level and the MA cross reversal signal'
+];
+
+// S&P 500 + Nasdaq 100 combined universe for CANSLIM screener
+const SCREENER_UNIVERSE = 'AAPL,ABBV,ABT,ACN,ADBE,ADI,ADM,ADP,ADSK,AEE,AEP,AFL,AIG,AIZ,AJG,AKAM,ALB,ALGN,ALK,ALL,ALLE,AMAT,AMCR,AMD,AME,AMGN,AMP,AMT,AMZN,ANET,ANSS,AON,AOS,APA,APD,APH,APTV,ARE,ATO,AVGO,AVY,AWK,AXP,AZO,BA,BAC,BAX,BBY,BDX,BEN,BIIB,BIO,BK,BKNG,BKR,BLK,BMY,BR,BRK-B,BRO,BSX,BWA,BXP,C,CAG,CAH,CARR,CAT,CB,CBOE,CBRE,CCI,CCL,CDNS,CDW,CE,CEG,CF,CFG,CHD,CHRW,CHTR,CI,CINF,CL,CLX,CMA,CMCSA,CME,CMG,CMI,CMS,CNC,CNP,COF,COO,COP,COST,CPRT,CPT,CRL,CRM,CSCO,CSGP,CSX,CTAS,CTRA,CTSH,CTVA,CVS,CVX,CZR,D,DAL,DD,DE,DFS,DG,DGX,DHI,DHR,DIS,DLR,DLTR,DOV,DOW,DPZ,DRI,DTE,DUK,DVA,DVN,DXCM,EA,EBAY,ECL,ED,EFX,EIX,EL,EMN,EMR,ENPH,EOG,EPAM,EQIX,EQR,EQT,ES,ESS,ETN,ETR,EVRG,EW,EXC,EXPD,EXPE,EXR,F,FANG,FAST,FBHS,FCX,FDS,FDX,FE,FFIV,FIS,FISV,FITB,FMC,FOX,FOXA,FRT,FTNT,FTV,GD,GE,GEHC,GILD,GIS,GL,GLW,GM,GNRC,GOOG,GOOGL,GPC,GPN,GRMN,GS,GWW,HAL,HAS,HBAN,HCA,HD,HOLX,HON,HPE,HPQ,HRL,HSIC,HST,HSY,HUM,HWM,IBM,ICE,IDXX,IEX,IFF,ILMN,INCY,INTC,INTU,INVH,IP,IPG,IQV,IR,IRM,ISRG,IT,ITW,IVZ,J,JBHT,JCI,JKHY,JNJ,JNPR,JPM,K,KDP,KEY,KEYS,KHC,KIM,KLAC,KMB,KMI,KMX,KO,KR,L,LDOS,LEN,LH,LHX,LIN,LKQ,LLY,LMT,LNC,LNT,LOW,LRCX,LUMN,LUV,LVS,LW,LYB,LYV,MA,MAA,MAR,MAS,MCD,MCHP,MCK,MCO,MDLZ,MDT,MET,META,MGM,MHK,MKC,MKTX,MLM,MMC,MMM,MNST,MO,MOH,MOS,MPC,MPWR,MRK,MRNA,MRO,MS,MSCI,MSFT,MSI,MTB,MTD,MU,NCLH,NDAQ,NDSN,NEE,NEM,NFLX,NI,NKE,NOC,NOW,NRG,NSC,NTAP,NTRS,NUE,NVDA,NVR,NWL,NWS,NWSA,NXPI,O,ODFL,OGN,OKE,OMC,ON,ORCL,ORLY,OTIS,OXY,PANW,PARA,PAYC,PAYX,PCAR,PCG,PEG,PEP,PFE,PFG,PG,PGR,PH,PHM,PKG,PLD,PM,PNC,PNR,PNW,POOL,PPG,PPL,PRU,PSA,PSX,PTC,PVH,PWR,PYPL,QCOM,QRVO,RCL,RE,REG,REGN,RF,RHI,RJF,RL,RMD,ROK,ROL,ROP,ROST,RSG,RTX,SBAC,SBUX,SCHW,SEE,SHW,SJM,SLB,SNA,SNPS,SO,SPG,SPGI,SRE,STE,STT,STX,STZ,SWK,SWKS,SYF,SYK,SYY,T,TAP,TDG,TDY,TECH,TEL,TER,TFC,TFX,TGT,TMO,TMUS,TPR,TRGP,TRMB,TROW,TRV,TSCO,TSLA,TSN,TT,TTWO,TXN,TXT,TYL,UAL,UDR,UHS,ULTA,UNH,UNP,UPS,URI,USB,V,VFC,VICI,VLO,VMC,VRSK,VRSN,VRTX,VTR,VTRS,VZ,WAB,WAT,WBA,WBD,WDC,WEC,WELL,WFC,WHR,WM,WMB,WMT,WRB,WRK,WST,WTW,WY,WYNN,XEL,XOM,XRAY,XYL,YUM,ZBH,ZBRA,ZION,ZTS,ABNB,AZN,BIDU,CPNG,CRWD,DDOG,DOCU,GFS,JD,LULU,MELI,MRVL,PDD,RIVN,TEAM,TTD,WDAY,ZM,ZS,ARM,COIN,DASH,SMCI,PLTR'.split(',');
+
+const CORS_PROXY = 'https://corsproxy.io/?';
+
+const TICKER_NAMES = {QQQ:'Invesco QQQ Trust',SPY:'SPDR S&P 500 ETF',DIA:'SPDR Dow Jones ETF',IWM:'iShares Russell 2000',IBIT:'iShares Bitcoin Trust',USO:'United States Oil Fund',SLV:'iShares Silver Trust',GLD:'SPDR Gold Shares',CPER:'United States Copper Index',PPLT:'abrdn Platinum Shares',AAPL:'Apple Inc',MSFT:'Microsoft Corp',AMZN:'Amazon.com Inc',GOOGL:'Alphabet Inc A',GOOG:'Alphabet Inc C',META:'Meta Platforms',NVDA:'NVIDIA Corp',TSLA:'Tesla Inc',AVGO:'Broadcom Inc',JPM:'JPMorgan Chase',V:'Visa Inc',MA:'Mastercard Inc',UNH:'UnitedHealth Group',HD:'Home Depot Inc',PG:'Procter & Gamble',JNJ:'Johnson & Johnson',CRM:'Salesforce Inc',ADBE:'Adobe Inc',NFLX:'Netflix Inc',AMD:'Advanced Micro Devices',COST:'Costco Wholesale',ORCL:'Oracle Corp',ACN:'Accenture plc',LLY:'Eli Lilly & Co',MRK:'Merck & Co',PEP:'PepsiCo Inc',KO:'Coca-Cola Co',TMO:'Thermo Fisher',ABT:'Abbott Labs',DHR:'Danaher Corp',INTC:'Intel Corp',CSCO:'Cisco Systems',CMCSA:'Comcast Corp',VZ:'Verizon Comm',T:'AT&T Inc',DIS:'Walt Disney Co',BA:'Boeing Co',CAT:'Caterpillar Inc',GS:'Goldman Sachs',AXP:'American Express',BLK:'BlackRock Inc',SCHW:'Charles Schwab',NOW:'ServiceNow Inc',INTU:'Intuit Inc',ISRG:'Intuitive Surgical',REGN:'Regeneron Pharma',GILD:'Gilead Sciences',AMGN:'Amgen Inc',BKNG:'Booking Holdings',ABNB:'Airbnb Inc',UBER:'Uber Technologies',ARM:'Arm Holdings',COIN:'Coinbase Global',DASH:'DoorDash Inc',SMCI:'Super Micro Computer',PLTR:'Palantir Technologies',CRWD:'CrowdStrike Holdings',PANW:'Palo Alto Networks',DDOG:'Datadog Inc',ZS:'Zscaler Inc',TEAM:'Atlassian Corp',WDAY:'Workday Inc',TTD:'Trade Desk Inc',MELI:'MercadoLibre Inc',SNOW:'Snowflake Inc',LULU:'Lululemon Athletica'};
+
+// ─── STATE ───
+let state = {
+  activeProfile: 'Josh',
+  activeScreen: 'dashboard',
+  selectedTicker: null,
+  darkMode: false,
+  tickerData: {},
+  screenerResults: [],
+  screenerRunning: false,
+  screenerProgress: 0,
+  customTickers: [],
+  refreshing: false,
+  calcPrefill: null
+};
+
+function getProfileKey(profile) { return (profile || state.activeProfile).toLowerCase(); }
+
+function loadProfiles() {
+  const saved = localStorage.getItem('tp_profiles');
+  if (saved) return JSON.parse(saved);
+  const p = {};
+  PROFILES.forEach(n => { p[n.toLowerCase()] = {trades:[],journal:[],checklist:{},checklistTicker:null,ibkrGatewayUrl:'https://localhost:5000',ibkrAccountId:null,ibkrConnected:false,ibkrPositions:[],ibkrBalance:null}; });
+  return p;
+}
+function saveProfiles(profiles) { localStorage.setItem('tp_profiles', JSON.stringify(profiles)); }
+
+let profiles = loadProfiles();
+
+function loadCustomTickers() {
+  const s = localStorage.getItem('tp_custom_tickers');
+  return s ? JSON.parse(s) : [];
+}
+function saveCustomTickers() { localStorage.setItem('tp_custom_tickers', state.customTickers); }
+
+state.customTickers = loadCustomTickers();
+state.darkMode = localStorage.getItem('tp_dark') === '1';
+
+function getAllTickers() {
+  const s = new Set([...PERMANENT_TICKERS, ...state.customTickers]);
+  state.screenerResults.forEach(r => s.add(r.ticker));
+  return [...s];
+}
+
+// ─── YAHOO FINANCE API ───
+async function fetchWithTimeout(url, timeoutMs = 8000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const resp = await fetch(url, {signal: controller.signal, headers:{'Accept':'application/json'}});
+    clearTimeout(timer);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    return await resp.json();
+  } catch(e) {
+    clearTimeout(timer);
+    throw e;
+  }
+}
+
+async function fetchYahoo(url) {
+  try {
+    return await fetchWithTimeout(CORS_PROXY + encodeURIComponent(url), 8000);
+  } catch(e) {
+    try {
+      return await fetchWithTimeout('https://api.allorigins.win/raw?url=' + encodeURIComponent(url), 8000);
+    } catch(e2) {
+      return null;
+    }
+  }
+}
+
+async function fetchChartData(ticker, range='1y', interval='1d') {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?range=${range}&interval=${interval}&includePrePost=false`;
+  const data = await fetchYahoo(url);
+  if (!data || !data.chart || !data.chart.result || !data.chart.result[0]) return null;
+  const r = data.chart.result[0];
+  const q = r.indicators.quote[0];
+  return {
+    meta: r.meta,
+    timestamps: r.timestamp || [],
+    open: q.open || [],
+    high: q.high || [],
+    low: q.low || [],
+    close: q.close || [],
+    volume: q.volume || []
+  };
+}
+
+async function fetchQuoteSummary(ticker) {
+  const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${ticker}?modules=defaultKeyStatistics,financialData,incomeStatementHistoryQuarterly,earningsHistory`;
+  return await fetchYahoo(url);
+}
+
+// ─── CALCULATIONS ───
+function calcSMA(closes, period) {
+  const valid = closes.filter(c => c != null);
+  if (valid.length < period) return null;
+  const slice = valid.slice(-period);
+  return slice.reduce((a,b) => a+b, 0) / period;
+}
+
+function calcSMAArray(closes, period) {
+  const result = [];
+  for (let i = 0; i < closes.length; i++) {
+    if (i < period - 1) { result.push(null); continue; }
+    let sum = 0, count = 0;
+    for (let j = i - period + 1; j <= i; j++) {
+      if (closes[j] != null) { sum += closes[j]; count++; }
+    }
+    result.push(count === period ? sum / period : null);
+  }
+  return result;
+}
+
+function calcATR(highs, lows, closes, period=14) {
+  if (highs.length < period + 1) return null;
+  const trs = [];
+  for (let i = 1; i < highs.length; i++) {
+    if (highs[i]==null||lows[i]==null||closes[i-1]==null) continue;
+    const tr = Math.max(highs[i]-lows[i], Math.abs(highs[i]-closes[i-1]), Math.abs(lows[i]-closes[i-1]));
+    trs.push(tr);
+  }
+  if (trs.length < period) return null;
+  let atr = trs.slice(0, period).reduce((a,b)=>a+b,0) / period;
+  for (let i = period; i < trs.length; i++) {
+    atr = (atr * (period - 1) + trs[i]) / period;
+  }
+  return atr;
+}
+
+function findCrossovers(ma10Arr, ma20Arr, timestamps) {
+  const crosses = [];
+  for (let i = 1; i < ma10Arr.length; i++) {
+    if (ma10Arr[i]==null||ma10Arr[i-1]==null||ma20Arr[i]==null||ma20Arr[i-1]==null) continue;
+    const prevAbove = ma10Arr[i-1] > ma20Arr[i-1];
+    const currAbove = ma10Arr[i] > ma20Arr[i];
+    if (prevAbove !== currAbove) {
+      crosses.push({index:i, timestamp:timestamps[i], type:currAbove?'bullish':'bearish'});
+    }
+  }
+  return crosses;
+}
+
+function getSignalInfo(closes, timestamps) {
+  const ma10Arr = calcSMAArray(closes, 10);
+  const ma20Arr = calcSMAArray(closes, 20);
+  const ma10 = ma10Arr[ma10Arr.length-1];
+  const ma20 = ma20Arr[ma20Arr.length-1];
+  const crosses = findCrossovers(ma10Arr, ma20Arr, timestamps);
+  let signal = 'NEUTRAL', daysSinceCross = null, isNewCross = false;
+  if (ma10 != null && ma20 != null) {
+    signal = ma10 > ma20 ? 'LONG' : ma10 < ma20 ? 'SHORT' : 'NEUTRAL';
+  }
+  if (crosses.length > 0) {
+    const last = crosses[crosses.length - 1];
+    // Count trading days (bars) since last crossover, not calendar days
+    // This matches TradingView's bar-based counting
+    daysSinceCross = closes.length - 1 - last.index;
+    const lastTs = last.timestamp * 1000;
+    const today = new Date();
+    const crossDate = new Date(lastTs);
+    isNewCross = crossDate.toDateString() === today.toDateString() || daysSinceCross === 0;
+  }
+  return {ma10, ma20, signal, daysSinceCross, isNewCross, ma10Arr, ma20Arr, crosses};
+}
+
+// ─── DATA MANAGEMENT ───
+async function loadTickerData(ticker) {
+  const cached = state.tickerData[ticker];
+  if (cached && Date.now() - cached.fetchedAt < 600000) return cached; // 10 min cache
+
+  const chart = await fetchChartData(ticker);
+  if (!chart) {
+    // Return cached even if stale, or create placeholder
+    return cached || {ticker, error:true, price:0, change:0, changePct:0, signal:'NEUTRAL',ma10:null,ma20:null,daysSinceCross:null,isNewCross:false,atr:null,fetchedAt:Date.now()};
+  }
+
+  const closes = chart.close;
+  const price = chart.meta.regularMarketPrice || closes[closes.length-1] || 0;
+  // Use previousClose (yesterday's close) for daily change, NOT chartPreviousClose (start of chart range)
+  const validCloses = closes.filter(c => c != null);
+  const prevClose = chart.meta.previousClose || (validCloses.length >= 2 ? validCloses[validCloses.length - 2] : price);
+  const change = price - prevClose;
+  const changePct = prevClose ? (change / prevClose) * 100 : 0;
+  const name = TICKER_NAMES[ticker] || chart.meta.shortName || chart.meta.symbol || ticker;
+
+  const sigInfo = getSignalInfo(closes, chart.timestamps);
+  const atr = calcATR(chart.high, chart.low, closes, 14);
+
+  const result = {
+    ticker, name, price, change, changePct, ...sigInfo, atr,
+    closes, opens: chart.open, highs: chart.high, lows: chart.low,
+    timestamps: chart.timestamps, volumes: chart.volume,
+    fetchedAt: Date.now()
+  };
+  state.tickerData[ticker] = result;
+  return result;
+}
+
+async function refreshAllTickers() {
+  state.refreshing = true;
+  renderRefreshBtn();
+  const tickers = getAllTickers();
+  const batchSize = 5;
+  for (let i = 0; i < tickers.length; i += batchSize) {
+    const batch = tickers.slice(i, i + batchSize);
+    await Promise.all(batch.map(t => loadTickerData(t)));
+    // Update UI incrementally
+    if (state.activeScreen === 'dashboard') renderDashboard();
+  }
+  state.refreshing = false;
+  renderRefreshBtn();
+
+  // Check for new crossovers and R-target alerts after data is loaded
+  checkForNewCrossovers();
+  checkRTargets();
+}
+
+// ─── SCREENER ───
+// Per-ticker caching: results accumulate across runs so partial runs still build up data.
+// Each ticker's screen result is cached individually for 24h.
+// Failed/timed-out tickers are retried on the next run.
+
+function loadScreenCache() {
+  const s = localStorage.getItem('tp_screen_cache');
+  return s ? JSON.parse(s) : {};
+}
+function saveScreenCache(cache) {
+  localStorage.setItem('tp_screen_cache', JSON.stringify(cache));
+}
+
+async function fetchQuickScreen(ticker) {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?range=1y&interval=1d&includePrePost=false`;
+  const data = await fetchYahoo(url);
+  if (!data || !data.chart || !data.chart.result || !data.chart.result[0]) return null;
+  const r = data.chart.result[0];
+  const q = r.indicators.quote[0];
+  const closes = (q.close || []).filter(c => c != null);
+  const volumes = (q.volume || []).filter(v => v != null);
+  if (closes.length < 60) return null;
+
+  const perf6m = closes.length >= 126 ?
+    ((closes[closes.length-1] - closes[closes.length-126]) / closes[closes.length-126]) * 100 :
+    ((closes[closes.length-1] - closes[0]) / closes[0]) * 100;
+  const avgVol = volumes.slice(-30).reduce((a,b) => a+b, 0) / Math.min(30, volumes.slice(-30).length);
+  const mCap = r.meta.marketCap || 0;
+
+  // 3-month performance
+  const c3m = closes.slice(-63);
+  const perf3m = c3m.length > 1 ? ((c3m[c3m.length-1] - c3m[0]) / c3m[0]) * 100 : 0;
+  // Price above 50-day MA
+  const ma50 = closes.slice(-50).reduce((a,b) => a+b, 0) / 50;
+  const aboveMa50 = closes[closes.length-1] > ma50;
+
+  return {
+    ticker,
+    price: closes[closes.length-1],
+    perf6m, perf3m, avgVol, marketCap: mCap, aboveMa50,
+    ts: Date.now()
+  };
+}
+
+async function runScreener() {
+  if (state.screenerRunning) return;
+  state.screenerRunning = true;
+  state.screenerProgress = 0;
+  if (state.activeScreen === 'dashboard') renderDashboard();
+
+  const cache = loadScreenCache();
+  const now = Date.now();
+  const MAX_AGE = 86400000; // 24 hours
+
+  // Determine which tickers need fetching (not cached or cache expired)
+  const needsFetch = SCREENER_UNIVERSE.filter(t => !cache[t] || (now - cache[t].ts) > MAX_AGE);
+  const alreadyCached = SCREENER_UNIVERSE.filter(t => cache[t] && (now - cache[t].ts) <= MAX_AGE);
+  const total = needsFetch.length;
+
+  showToast(`Screening ${total} tickers (${alreadyCached.length} cached)...`);
+
+  // Fetch uncached tickers
+  const batchSize = 8;
+  for (let i = 0; i < total; i += batchSize) {
+    const batch = needsFetch.slice(i, i + batchSize);
+    const results = await Promise.all(batch.map(t => fetchQuickScreen(t)));
+    results.forEach((r, j) => {
+      if (r) {
+        cache[batch[j]] = r;
+      }
+      // Don't cache failures - they'll be retried next run
+    });
+    state.screenerProgress = Math.round((i / Math.max(total, 1)) * 90);
+    if (state.activeScreen === 'dashboard') renderScreenerProgress();
+    if (i + batchSize < total) await new Promise(r => setTimeout(r, 400));
+  }
+
+  // Save cache after fetching
+  saveScreenCache(cache);
+
+  // Apply filters to ALL cached results (both freshly fetched and previously cached)
+  const qualified = [];
+  SCREENER_UNIVERSE.forEach(ticker => {
+    const r = cache[ticker];
+    if (!r) return;
+    if (r.perf6m <= 20) return;
+    if (r.avgVol <= 500000) return;
+    if (r.perf3m < 10) return;
+    if (!r.aboveMa50) return;
+    if (r.marketCap > 0 && r.marketCap < 2e9) return;
+    qualified.push(r);
+  });
+
+  // Sort by 6-month performance and take top 15
+  qualified.sort((a,b) => b.perf6m - a.perf6m);
+  state.screenerResults = qualified.slice(0, 15);
+  state.screenerRunning = false;
+  state.screenerProgress = 100;
+
+  // Cache final results list
+  localStorage.setItem('tp_screener', JSON.stringify({results: state.screenerResults, timestamp: Date.now()}));
+
+  if (state.activeScreen === 'dashboard') renderDashboard();
+  showToast(`Screener complete: ${qualified.length} qualify, top 15 shown (${alreadyCached.length + total - needsFetch.length} screened)`);
+}
+
+function loadCachedScreener() {
+  const s = localStorage.getItem('tp_screener');
+  if (!s) return;
+  const data = JSON.parse(s);
+  if (Date.now() - data.timestamp < 86400000) {
+    state.screenerResults = data.results || [];
+  }
+}
+
+// ─── MARKET STATUS ───
+function isMarketOpen() {
+  const now = new Date();
+  const ny = new Date(now.toLocaleString('en-US', {timeZone: 'America/New_York'}));
+  const day = ny.getDay();
+  if (day === 0 || day === 6) return false;
+  const h = ny.getHours(), m = ny.getMinutes();
+  const mins = h * 60 + m;
+  return mins >= 570 && mins <= 960; // 9:30 AM - 4:00 PM ET
+}
+
+// ─── CHART ENGINE (Canvas) ───
+class ChartEngine {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.padding = {top:20,right:80,bottom:40,left:10};
+    this.data = null;
+    this.overlays = [];
+    this.hoverIndex = -1;
+    this.hoverY = -1; // raw canvas Y for crosshair
+    // Zoom/scroll state: viewStart and viewEnd are indices into the data array
+    this.viewStart = 0;
+    this.viewEnd = 0;
+    this.minBars = 30; // minimum bars visible when zoomed in
+    this.isDragging = false;
+    this.dragStartX = 0;
+    this.dragStartView = 0;
+    this.setupEvents();
+  }
+
+  setupEvents() {
+    const c = this.canvas;
+    // Hover
+    c.addEventListener('mousemove', e => {
+      if (this.isDragging) { this.handleDrag(e); return; }
+      const rect = c.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const x = (e.clientX - rect.left) * dpr;
+      this.hoverY = (e.clientY - rect.top) * dpr;
+      this.handleHover(x);
+    });
+    c.addEventListener('mouseleave', () => { this.hoverIndex = -1; this.hoverY = -1; this.isDragging = false; this.draw(); });
+    // Touch hover
+    c.addEventListener('touchmove', e => {
+      if (e.touches.length === 1) {
+        e.preventDefault();
+        const rect = c.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        const x = (e.touches[0].clientX - rect.left) * dpr;
+        this.hoverY = (e.touches[0].clientY - rect.top) * dpr;
+        this.handleHover(x);
+      }
+    }, {passive:false});
+    // Scroll to zoom
+    c.addEventListener('wheel', e => {
+      e.preventDefault();
+      if (!this.data) return;
+      const total = this.data.closes.length;
+      const visibleBars = this.viewEnd - this.viewStart;
+      const zoomAmount = Math.max(1, Math.ceil(visibleBars * 0.015));
+      if (e.deltaY < 0) {
+        // Zoom in
+        if (visibleBars <= this.minBars) return;
+        this.viewStart = Math.min(this.viewStart + zoomAmount, this.viewEnd - this.minBars);
+        this.viewEnd = Math.max(this.viewEnd - zoomAmount, this.viewStart + this.minBars);
+      } else {
+        // Zoom out
+        this.viewStart = Math.max(0, this.viewStart - zoomAmount);
+        this.viewEnd = Math.min(total, this.viewEnd + zoomAmount);
+      }
+      this.draw();
+    }, {passive:false});
+    // Drag to pan
+    c.addEventListener('mousedown', e => {
+      this.isDragging = true;
+      this.dragStartX = e.clientX;
+      this.dragStartView = this.viewStart;
+    });
+    c.addEventListener('mouseup', () => { this.isDragging = false; });
+    // Pinch to zoom on mobile
+    let lastPinchDist = 0;
+    c.addEventListener('touchstart', e => {
+      if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        lastPinchDist = Math.sqrt(dx*dx + dy*dy);
+      }
+    });
+    c.addEventListener('touchmove', e => {
+      if (e.touches.length === 2 && this.data) {
+        e.preventDefault();
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        const diff = dist - lastPinchDist;
+        lastPinchDist = dist;
+        const total = this.data.closes.length;
+        const zoomAmt = Math.ceil(Math.abs(diff) * 0.3);
+        if (diff > 5) { this.viewStart = Math.min(this.viewStart+zoomAmt, this.viewEnd-this.minBars); this.viewEnd = Math.max(this.viewEnd-zoomAmt, this.viewStart+this.minBars); }
+        else if (diff < -5) { this.viewStart = Math.max(0, this.viewStart-zoomAmt); this.viewEnd = Math.min(total, this.viewEnd+zoomAmt); }
+        this.draw();
+      }
+    }, {passive:false});
+  }
+
+  handleDrag(e) {
+    if (!this.data) return;
+    const rect = this.canvas.getBoundingClientRect();
+    const plotW = rect.width - this.padding.left - this.padding.right;
+    const visibleBars = this.viewEnd - this.viewStart;
+    const pxPerBar = plotW / visibleBars;
+    const dx = e.clientX - this.dragStartX;
+    const barShift = Math.round(-dx / pxPerBar);
+    const total = this.data.closes.length;
+    let newStart = this.dragStartView + barShift;
+    newStart = Math.max(0, Math.min(newStart, total - visibleBars));
+    this.viewStart = newStart;
+    this.viewEnd = newStart + visibleBars;
+    this.draw();
+  }
+
+  handleHover(x) {
+    if (!this.data) return;
+    const visibleBars = this.viewEnd - this.viewStart;
+    const plotW = this.canvas.width - this.padding.left - this.padding.right;
+    const barW = plotW / visibleBars;
+    const idx = this.viewStart + Math.floor((x - this.padding.left) / barW);
+    if (idx >= this.viewStart && idx < this.viewEnd && idx !== this.hoverIndex) {
+      this.hoverIndex = idx;
+      this.draw();
+    }
+  }
+
+  setData(data) {
+    this.data = data;
+    this.hoverIndex = -1;
+    // Default view: show all data
+    this.viewStart = 0;
+    this.viewEnd = data.closes ? data.closes.length : 0;
+    this.draw();
+  }
+
+  setOverlays(overlays) {
+    this.overlays = overlays;
+    this.draw();
+  }
+
+  draw() {
+    const canvas = this.canvas;
+    const ctx = this.ctx;
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
+    ctx.scale(dpr, dpr);
+
+    const w = rect.width, h = rect.height;
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const bgColor = isDark ? '#1e1e2e' : '#ffffff';
+    const gridColor = isDark ? 'rgba(108,112,134,0.15)' : 'rgba(147,153,178,0.12)';
+    const textColor = isDark ? '#a6adc8' : '#9399b2';
+    const priceColor = isDark ? '#cdd6f4' : '#1e1e2e';
+
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, w, h);
+
+    if (!this.data || !this.data.closes || this.data.closes.length === 0) {
+      ctx.fillStyle = textColor;
+      ctx.font = '14px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('No data available', w/2, h/2);
+      return;
+    }
+
+    const {closes, timestamps, ma10Arr, ma20Arr, crosses} = this.data;
+    const pad = this.padding;
+    const plotX = pad.left, plotY = pad.top;
+    const plotW = w - pad.left - pad.right;
+    const plotH = h - pad.top - pad.bottom;
+    const vs = this.viewStart, ve = this.viewEnd;
+    const visibleBars = ve - vs;
+
+    // Find price range for visible portion only
+    let minP = Infinity, maxP = -Infinity;
+    const {opens: dOpens, highs: dHighs, lows: dLows} = this.data;
+    for (let i = vs; i < ve; i++) {
+      if (dHighs && dHighs[i] != null) maxP = Math.max(maxP, dHighs[i]);
+      if (dLows && dLows[i] != null) minP = Math.min(minP, dLows[i]);
+      if (closes[i] != null) { minP = Math.min(minP, closes[i]); maxP = Math.max(maxP, closes[i]); }
+      if (ma10Arr && ma10Arr[i] != null) { minP = Math.min(minP, ma10Arr[i]); maxP = Math.max(maxP, ma10Arr[i]); }
+      if (ma20Arr && ma20Arr[i] != null) { minP = Math.min(minP, ma20Arr[i]); maxP = Math.max(maxP, ma20Arr[i]); }
+    }
+    this.overlays.forEach(o => { minP = Math.min(minP, o.price); maxP = Math.max(maxP, o.price); });
+    const range = maxP - minP || 1;
+    minP -= range * 0.05;
+    maxP += range * 0.05;
+    const priceRange = maxP - minP;
+
+    // Map data index to x position within the visible window
+    const toX = i => plotX + ((i - vs) / (visibleBars - 1)) * plotW;
+    const toY = p => plotY + (1 - (p - minP) / priceRange) * plotH;
+
+    // Grid lines
+    ctx.strokeStyle = gridColor;
+    ctx.lineWidth = 0.5;
+    const gridLines = 6;
+    for (let i = 0; i <= gridLines; i++) {
+      const y = plotY + (i / gridLines) * plotH;
+      const price = maxP - (i / gridLines) * priceRange;
+      ctx.beginPath(); ctx.moveTo(plotX, y); ctx.lineTo(plotX + plotW, y); ctx.stroke();
+      ctx.fillStyle = textColor;
+      ctx.font = '11px SF Mono, monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(price.toFixed(2), w - 4, y + 4);
+    }
+
+    // Date labels (visible range only)
+    ctx.fillStyle = textColor;
+    ctx.font = '10px system-ui';
+    ctx.textAlign = 'center';
+    const dateStep = Math.max(1, Math.floor(visibleBars / 8));
+    for (let i = vs; i < ve; i += dateStep) {
+      if (timestamps[i]) {
+        const d = new Date(timestamps[i] * 1000);
+        const label = d.toLocaleDateString('en-US', {month:'short',day:'numeric'});
+        ctx.fillText(label, toX(i), h - 8);
+      }
+    }
+
+    // Candlesticks
+    const {opens, highs, lows} = this.data;
+    const rawCandleW = (plotW / visibleBars) * 0.7;
+    const candleW = Math.max(2, Math.min(rawCandleW, 14));
+    const wickW = Math.max(1, candleW > 6 ? 1.5 : 1);
+    const candleR = candleW > 5 ? 1.5 : 0; // rounded corners when wide enough
+    const bullColor = isDark ? '#26a69a' : '#26a69a';
+    const bearColor = isDark ? '#ef5350' : '#ef5350';
+    const bullFill = isDark ? 'rgba(38,166,154,0.2)' : 'rgba(38,166,154,0.15)';
+    const dojiColor = isDark ? '#a6adc8' : '#585b70';
+    let started = false;
+
+    if (opens && highs && lows) {
+      for (let i = vs; i < ve; i++) {
+        const o = opens[i], hi = highs[i], lo = lows[i], c = closes[i];
+        if (o == null || hi == null || lo == null || c == null) continue;
+        const x = toX(i);
+        const isBull = c >= o;
+        const color = c === o ? dojiColor : isBull ? bullColor : bearColor;
+
+        // Wick (high-low line)
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = wickW;
+        ctx.moveTo(x, toY(hi));
+        ctx.lineTo(x, toY(lo));
+        ctx.stroke();
+
+        // Body (open-close rect with optional rounding)
+        const bodyTop = toY(Math.max(o, c));
+        const bodyBot = toY(Math.min(o, c));
+        const bodyH = Math.max(1, bodyBot - bodyTop);
+        ctx.fillStyle = isBull ? bullFill : bearColor;
+        if (candleR > 0 && bodyH > 3) {
+          ctx.beginPath();
+          ctx.roundRect(x - candleW/2, bodyTop, candleW, bodyH, candleR);
+          ctx.fill();
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        } else {
+          ctx.fillRect(x - candleW/2, bodyTop, candleW, bodyH);
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x - candleW/2, bodyTop, candleW, bodyH);
+        }
+      }
+    } else {
+      // Fallback: line chart if no OHLC
+      ctx.beginPath();
+      ctx.strokeStyle = priceColor;
+      ctx.lineWidth = 1.5;
+      for (let i = vs; i < ve; i++) {
+        if (closes[i] == null) continue;
+        if (!started) { ctx.moveTo(toX(i), toY(closes[i])); started = true; }
+        else ctx.lineTo(toX(i), toY(closes[i]));
+      }
+      ctx.stroke();
+    }
+
+    // MA10 line
+    if (ma10Arr) {
+      ctx.beginPath();
+      ctx.strokeStyle = '#89b4fa';
+      ctx.lineWidth = 1.8;
+      started = false;
+      for (let i = vs; i < ve; i++) {
+        if (ma10Arr[i] == null) continue;
+        if (!started) { ctx.moveTo(toX(i), toY(ma10Arr[i])); started = true; }
+        else ctx.lineTo(toX(i), toY(ma10Arr[i]));
+      }
+      ctx.stroke();
+    }
+
+    // MA20 line
+    if (ma20Arr) {
+      ctx.beginPath();
+      ctx.strokeStyle = '#f9e2af';
+      ctx.lineWidth = 1.8;
+      started = false;
+      for (let i = vs; i < ve; i++) {
+        if (ma20Arr[i] == null) continue;
+        if (!started) { ctx.moveTo(toX(i), toY(ma20Arr[i])); started = true; }
+        else ctx.lineTo(toX(i), toY(ma20Arr[i]));
+      }
+      ctx.stroke();
+    }
+
+    // Crossover markers (only visible ones)
+    if (crosses) {
+      crosses.forEach(cross => {
+        if (cross.index < vs || cross.index >= ve) return;
+        const x = toX(cross.index);
+        const y = toY(closes[cross.index] || 0);
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fillStyle = cross.type === 'bullish' ? '#26a69a' : '#ef5350';
+        ctx.fill();
+        ctx.strokeStyle = bgColor;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      });
+    }
+
+    // Horizontal overlays (entry, stop, pyramid levels)
+    this.overlays.forEach(o => {
+      const y = toY(o.price);
+      if (y < plotY || y > plotY + plotH) return;
+      ctx.beginPath();
+      ctx.setLineDash(o.dash || [6, 4]);
+      ctx.strokeStyle = o.color || '#89b4fa';
+      ctx.lineWidth = 1;
+      ctx.moveTo(plotX, y);
+      ctx.lineTo(plotX + plotW, y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = o.color || '#89b4fa';
+      ctx.font = 'bold 10px system-ui';
+      ctx.textAlign = 'left';
+      ctx.fillText(o.label + ' ' + o.price.toFixed(2), plotX + 4, y - 4);
+    });
+
+    // Crosshair + price label (TradingView style)
+    const mouseY = this.hoverY;
+    const inPlot = mouseY >= plotY * dpr && mouseY <= (plotY + plotH) * dpr;
+
+    // Always draw horizontal crosshair line at mouse Y with price label on right axis
+    if (inPlot && mouseY > 0) {
+      const scaledY = mouseY / dpr;
+      const crossPrice = maxP - ((scaledY - plotY) / plotH) * priceRange;
+
+      // Horizontal dashed line
+      ctx.beginPath();
+      ctx.setLineDash([4, 3]);
+      ctx.strokeStyle = isDark ? 'rgba(166,172,205,0.4)' : 'rgba(88,91,112,0.35)';
+      ctx.lineWidth = 0.7;
+      ctx.moveTo(plotX, scaledY);
+      ctx.lineTo(plotX + plotW, scaledY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Price label on right Y-axis
+      const labelW = 68, labelH = 20;
+      const labelX = plotX + plotW + 2;
+      const labelY = scaledY - labelH / 2;
+      ctx.fillStyle = isDark ? '#89b4fa' : '#5b7ee5';
+      ctx.beginPath();
+      ctx.roundRect(labelX, labelY, labelW, labelH, 3);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 10px SF Mono, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(crossPrice.toFixed(2), labelX + labelW / 2, labelY + 14);
+    }
+
+    // Vertical crosshair + OHLC tooltip when hovering a specific bar
+    if (this.hoverIndex >= vs && this.hoverIndex < ve && closes[this.hoverIndex] != null) {
+      const hx = toX(this.hoverIndex);
+      const hy = toY(closes[this.hoverIndex]);
+
+      // Vertical dashed line
+      ctx.beginPath();
+      ctx.setLineDash([4, 3]);
+      ctx.strokeStyle = isDark ? 'rgba(166,172,205,0.4)' : 'rgba(88,91,112,0.35)';
+      ctx.lineWidth = 0.7;
+      ctx.moveTo(hx, plotY);
+      ctx.lineTo(hx, plotY + plotH);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Date label on bottom X-axis
+      if (timestamps[this.hoverIndex]) {
+        const dateStr = new Date(timestamps[this.hoverIndex] * 1000).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'});
+        const dateLabelW = ctx.measureText(dateStr).width + 14;
+        const dateLabelH = 18;
+        const dateLabelX = hx - dateLabelW / 2;
+        const dateLabelY = plotY + plotH + 4;
+        ctx.fillStyle = isDark ? '#89b4fa' : '#5b7ee5';
+        ctx.beginPath();
+        ctx.roundRect(Math.max(plotX, dateLabelX), dateLabelY, dateLabelW, dateLabelH, 3);
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 10px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText(dateStr, hx, dateLabelY + 13);
+      }
+
+      // OHLC info bar at top of chart
+      const idx = this.hoverIndex;
+      const o = dOpens ? dOpens[idx] : null;
+      const hi = dHighs ? dHighs[idx] : null;
+      const lo = dLows ? dLows[idx] : null;
+      const c = closes[idx];
+      const m10 = ma10Arr ? ma10Arr[idx] : null;
+      const m20 = ma20Arr ? ma20Arr[idx] : null;
+      const isBull = o != null && c >= o;
+
+      let infoText = '';
+      if (o != null) infoText += `O ${o.toFixed(2)}  H ${hi.toFixed(2)}  L ${lo.toFixed(2)}  C ${c.toFixed(2)}`;
+      else infoText += `$${c.toFixed(2)}`;
+      if (m10 != null) infoText += `   MA10 ${m10.toFixed(2)}`;
+      if (m20 != null) infoText += `   MA20 ${m20.toFixed(2)}`;
+
+      ctx.fillStyle = isDark ? 'rgba(30,30,46,0.85)' : 'rgba(244,246,249,0.9)';
+      ctx.fillRect(plotX, plotY, plotW, 22);
+      ctx.font = '11px SF Mono, monospace';
+      ctx.textAlign = 'left';
+      ctx.fillStyle = o != null ? (isBull ? '#26a69a' : '#ef5350') : priceColor;
+      ctx.fillText(infoText, plotX + 6, plotY + 15);
+
+      // Small dot on the close price
+      ctx.beginPath();
+      ctx.arc(hx, hy, 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = isDark ? '#89b4fa' : '#5b7ee5';
+      ctx.fill();
+    }
+  }
+}
+
+// ─── UI RENDERING ───
+function renderNav() {
+  // Sidebar nav
+  const sidebarNav = document.getElementById('sidebarNav');
+  sidebarNav.innerHTML = SCREENS.map(s =>
+    `<button class="nav-item${state.activeScreen===s.id?' active':''}" data-screen="${s.id}">${s.icon}<span>${s.label}</span></button>`
+  ).join('');
+  sidebarNav.querySelectorAll('.nav-item').forEach(btn => {
+    btn.onclick = () => navigateTo(btn.dataset.screen);
+  });
+
+  // Sidebar profiles
+  const sp = document.getElementById('sidebarProfiles');
+  sp.innerHTML = PROFILES.map(p =>
+    `<button class="profile-btn${state.activeProfile===p?' active':''}" data-profile="${p}">${p}</button>`
+  ).join('');
+  sp.querySelectorAll('.profile-btn').forEach(btn => {
+    btn.onclick = () => switchProfile(btn.dataset.profile);
+  });
+
+  // Header profiles (mobile)
+  const hp = document.getElementById('headerProfiles');
+  hp.innerHTML = PROFILES.map(p =>
+    `<button class="profile-btn${state.activeProfile===p?' active':''}" data-profile="${p}">${p}</button>`
+  ).join('');
+  hp.querySelectorAll('.profile-btn').forEach(btn => {
+    btn.onclick = () => switchProfile(btn.dataset.profile);
+  });
+
+  // Bottom nav (mobile)
+  const bn = document.getElementById('botNav');
+  bn.innerHTML = SCREENS.map(s =>
+    `<button class="botnav-item${state.activeScreen===s.id?' active':''}" data-screen="${s.id}">${s.icon}<span>${s.label}</span></button>`
+  ).join('');
+  bn.querySelectorAll('.botnav-item').forEach(btn => {
+    btn.onclick = () => navigateTo(btn.dataset.screen);
+  });
+
+  // Market status
+  const open = isMarketOpen();
+  document.getElementById('marketDot').className = 'market-dot ' + (open?'open':'closed');
+  document.getElementById('marketStatus').textContent = open ? 'Market Open' : 'Market Closed';
+}
+
+function renderRefreshBtn() {
+  const btn = document.getElementById('refreshBtn');
+  if (state.refreshing) btn.querySelector('svg').classList.add('refresh-spin');
+  else btn.querySelector('svg').classList.remove('refresh-spin');
+}
+
+function navigateTo(screen, options={}) {
+  state.activeScreen = screen;
+  if (options.ticker) state.selectedTicker = options.ticker;
+  if (options.calcPrefill) state.calcPrefill = options.calcPrefill;
+  renderNav();
+  renderScreen();
+}
+
+function switchProfile(profile) {
+  state.activeProfile = profile;
+  renderNav();
+  renderScreen();
+}
+
+function renderScreen() {
+  const content = document.getElementById('content');
+  content.scrollTop = 0;
+  switch(state.activeScreen) {
+    case 'dashboard': renderDashboard(); break;
+    case 'chart': renderChartScreen(); break;
+    case 'calculator': renderCalculator(); break;
+    case 'portfolio': renderPortfolio(); break;
+    case 'checklist': renderChecklist(); break;
+    case 'journal': renderJournal(); break;
+  }
+}
+
+// ─── DASHBOARD ───
+function renderDashboard() {
+  const content = document.getElementById('content');
+  const allTickers = getAllTickers();
+  const tickerDataArr = allTickers.map(t => state.tickerData[t]).filter(Boolean);
+
+  const longCount = tickerDataArr.filter(d => d.signal === 'LONG').length;
+  const shortCount = tickerDataArr.filter(d => d.signal === 'SHORT').length;
+  const newCrossCount = tickerDataArr.filter(d => d.isNewCross).length;
+
+  // Calculate total open risk
+  const pk = getProfileKey();
+  const trades = profiles[pk].trades || [];
+  let totalRisk = 0;
+  trades.forEach(t => { totalRisk += t.dollarRisk || 0; });
+
+  content.innerHTML = `
+    <div class="screen active" id="screen-dashboard">
+      <div class="summary-row">
+        <div class="summary-card"><div class="label">Long Signals</div><div class="value green">${longCount}</div></div>
+        <div class="summary-card"><div class="label">Short Signals</div><div class="value red">${shortCount}</div></div>
+        <div class="summary-card"><div class="label">Open Risk</div><div class="value">${trades.length > 0 ? (totalRisk > 0 ? '$' + fmt(totalRisk) : '--') : '--'}</div></div>
+        <div class="summary-card"><div class="label">New Crosses Today</div><div class="value amber">${newCrossCount}</div></div>
+      </div>
+
+      <div class="section-header"><h2>Core ETFs & Diversifiers</h2><span class="count">${PERMANENT_TICKERS.length} tickers</span></div>
+      ${renderSignalTable(PERMANENT_TICKERS)}
+      ${renderSignalGrid(PERMANENT_TICKERS)}
+
+      ${state.customTickers.length > 0 ? `
+        <div class="section-header">
+          <h2>Custom Watchlist</h2>
+          <span class="count">${state.customTickers.length} tickers</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+          ${state.customTickers.map(t => `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--card-border);border-radius:6px;padding:4px 8px;font-size:12px;font-weight:600;font-family:var(--mono)">${t}<button onclick="event.stopPropagation();removeCustomTicker('${t}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;line-height:1;padding:0 2px" title="Remove">&times;</button></span>`).join('')}
+        </div>
+        ${renderSignalTable(state.customTickers)}
+        ${renderSignalGrid(state.customTickers)}
+      ` : ''}
+
+      <div class="section-header">
+        <h2>IBD Leaders (CANSLIM Screener)</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="count">${state.screenerResults.length} qualifying</span>
+          <button class="btn btn-sm btn-outline" onclick="runScreener()">
+            ${state.screenerRunning ? 'Running...' : 'Run Screener'}
+          </button>
+        </div>
+      </div>
+      ${state.screenerRunning ? `<div class="screener-progress"><div class="fill" style="width:${state.screenerProgress}%"></div></div>` : ''}
+      ${state.screenerResults.length > 0 ? renderScreenerTable() : '<div style="color:var(--text3);padding:12px;font-size:13px">Run the screener to find qualifying stocks from the S&P 500 + Nasdaq 100 universe.</div>'}
+    </div>
+  `;
+}
+
+function renderScreenerProgress() {
+  const el = document.querySelector('.screener-progress .fill');
+  if (el) el.style.width = state.screenerProgress + '%';
+}
+
+function renderSignalTable(tickers) {
+  let rows = '';
+  tickers.forEach(ticker => {
+    const d = state.tickerData[ticker];
+    if (!d) {
+      rows += `<tr onclick="navigateTo('chart',{ticker:'${ticker}'})"><td class="ticker-cell">${ticker}</td><td colspan="6" style="color:var(--text3)">Loading...</td></tr>`;
+      return;
+    }
+    const chClass = d.change >= 0 ? 'up' : 'down';
+    const sigClass = d.signal.toLowerCase();
+    rows += `<tr onclick="navigateTo('chart',{ticker:'${ticker}'})">
+      <td class="ticker-cell">${ticker}${d.isNewCross ? ' <span style="background:linear-gradient(135deg,#fab387,#f9e2af);color:#1e1e2e;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:800">NEW</span>' : ''}</td>
+      <td style="color:var(--text3);font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.name || ''}</td>
+      <td class="price-cell">$${fmt(d.price)}</td>
+      <td class="change-cell ${chClass}">${d.change>=0?'+':''}${fmt(d.change)} (${d.changePct>=0?'+':''}${d.changePct.toFixed(2)}%)</td>
+      <td class="ma-cell">${d.ma10!=null?d.ma10.toFixed(2):'--'}</td>
+      <td class="ma-cell">${d.ma20!=null?d.ma20.toFixed(2):'--'}</td>
+      <td><span class="signal-badge ${sigClass}">${d.signal}</span></td>
+      <td style="font-size:12px;color:var(--text3)">${d.daysSinceCross!=null?d.daysSinceCross+'d':'--'}</td>
+    </tr>`;
+  });
+
+  return `<div class="signal-table-wrap"><table class="signal-table">
+    <thead><tr><th>Ticker</th><th>Name</th><th>Price</th><th>Day Change</th><th>MA10</th><th>MA20</th><th>Signal</th><th>Cross</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function renderSignalGrid(tickers) {
+  let cards = '';
+  tickers.forEach(ticker => {
+    const d = state.tickerData[ticker];
+    if (!d) {
+      cards += `<div class="signal-card" onclick="navigateTo('chart',{ticker:'${ticker}'})"><div class="ticker-row"><span class="ticker">${ticker}</span></div><div style="color:var(--text3);font-size:13px">Loading...</div></div>`;
+      return;
+    }
+    const sigClass = d.signal === 'LONG' ? 'long' : d.signal === 'SHORT' ? 'short' : '';
+    const chClass = d.change >= 0 ? 'up' : 'down';
+    cards += `<div class="signal-card ${sigClass}" onclick="navigateTo('chart',{ticker:'${ticker}'})">
+      ${d.isNewCross ? '<div class="new-cross-badge">NEW CROSS</div>' : ''}
+      <div class="ticker-row"><span class="ticker">${ticker}</span><span class="signal-badge ${d.signal.toLowerCase()}">${d.signal}</span></div>
+      <div class="name">${d.name || ticker}</div>
+      <div class="price">$${fmt(d.price)}</div>
+      <div class="change ${chClass}">${d.change>=0?'+':''}${fmt(d.change)} (${d.changePct>=0?'+':''}${d.changePct.toFixed(2)}%)</div>
+      <div class="ma-info">
+        <div><div class="ma-label">MA10</div><div class="ma-val" style="color:#89b4fa">${d.ma10!=null?d.ma10.toFixed(2):'--'}</div></div>
+        <div><div class="ma-label">MA20</div><div class="ma-val" style="color:#f9e2af">${d.ma20!=null?d.ma20.toFixed(2):'--'}</div></div>
+      </div>
+      <div class="days-since">${d.daysSinceCross!=null?'Last cross: '+d.daysSinceCross+' days ago':'No recent crossover'}</div>
+    </div>`;
+  });
+  return `<div class="signal-grid">${cards}</div>`;
+}
+
+function renderScreenerTable() {
+  let rows = '';
+  state.screenerResults.forEach(r => {
+    rows += `<tr onclick="navigateTo('chart',{ticker:'${r.ticker}'})">
+      <td style="font-weight:800;font-family:var(--mono)">${r.ticker}</td>
+      <td style="font-family:var(--mono)">$${fmt(r.price)}</td>
+      <td style="font-family:var(--mono);color:#40a02b">+${r.perf6m.toFixed(1)}%</td>
+      <td style="font-family:var(--mono)">${r.perf3m ? '+' + r.perf3m.toFixed(1) + '%' : '--'}</td>
+      <td style="font-family:var(--mono)">${r.marketCap ? fmtB(r.marketCap) : '--'}</td>
+      <td style="font-family:var(--mono)">${r.avgVol ? (r.avgVol/1000).toFixed(0) + 'K' : '--'}</td>
+    </tr>`;
+  });
+  return `<div class="screener-table-wrap"><table class="screener-table">
+    <thead><tr><th>Ticker</th><th>Price</th><th>6M Perf</th><th>3M Perf</th><th>Mkt Cap</th><th>Avg Vol</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function removeCustomTicker(ticker) {
+  state.customTickers = state.customTickers.filter(t => t !== ticker);
+  saveCustomTickers();
+  renderDashboard();
+  showToast(`${ticker} removed from watchlist`);
+}
+
+function addCustomTicker(ticker) {
+  if (!state.customTickers.includes(ticker)) {
+    state.customTickers.push(ticker);
+    saveCustomTickers();
+    loadTickerData(ticker).then(() => renderDashboard());
+    showToast(`${ticker} added to your watchlist`);
+  }
+}
+
+// ─── CHART SCREEN ───
+let chartEngine = null;
+
+function renderChartScreen() {
+  const ticker = state.selectedTicker;
+  if (!ticker) { navigateTo('dashboard'); return; }
+
+  const content = document.getElementById('content');
+  const d = state.tickerData[ticker];
+
+  // Check if active trader has open trade in this ticker
+  const pk = getProfileKey();
+  const trade = (profiles[pk].trades || []).find(t => t.ticker === ticker);
+
+  content.innerHTML = `
+    <div class="screen active">
+      <div class="chart-header">
+        <button class="back-btn" onclick="navigateTo('dashboard')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+        </button>
+        <div>
+          <div class="chart-ticker">${ticker}</div>
+          <div class="chart-name">${d ? d.name || '' : ''}</div>
+        </div>
+        <div class="chart-price">${d ? '$' + fmt(d.price) : '...'}</div>
+      </div>
+
+      <div class="chart-info-grid">
+        <div class="chart-info-card"><div class="label">Signal</div><div class="val"><span class="signal-badge ${d?d.signal.toLowerCase():'neutral'}">${d?d.signal:'--'}</span></div></div>
+        <div class="chart-info-card"><div class="label">MA10</div><div class="val" style="color:#89b4fa">${d&&d.ma10!=null?d.ma10.toFixed(2):'--'}</div></div>
+        <div class="chart-info-card"><div class="label">MA20</div><div class="val" style="color:#f9e2af">${d&&d.ma20!=null?d.ma20.toFixed(2):'--'}</div></div>
+        <div class="chart-info-card"><div class="label">14-Day ATR</div><div class="val">${d&&d.atr!=null?d.atr.toFixed(2):'--'}</div></div>
+        ${trade ? `<div class="chart-info-card"><div class="label">Unrealized P&L (ATR)</div><div class="val" style="color:${(d.price-trade.entryPrice)>=0?'#40a02b':'#d20f39'}">${d?((d.price-trade.entryPrice)/(trade.atr||1)).toFixed(2):'--'}x ATR</div></div>` : ''}
+      </div>
+
+      <div class="chart-container">
+        <div class="chart-canvas-wrap"><canvas id="mainChart"></canvas></div>
+        <div class="chart-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#26a69a"></div>Bullish</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#ef5350"></div>Bearish</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#89b4fa"></div>MA10</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#f9e2af"></div>MA20</div>
+          <div class="legend-item" style="margin-left:auto;color:var(--text3);font-size:11px">Scroll to zoom &middot; Drag to pan</div>
+        </div>
+      </div>
+
+      <div class="chart-actions">
+        <button class="btn btn-primary" onclick="openCalcFromChart('${ticker}')">Enter Trade</button>
+        <button class="btn btn-outline" onclick="openChecklistFromChart('${ticker}')">Pre-Trade Checklist</button>
+      </div>
+    </div>
+  `;
+
+  // Setup chart
+  const canvas = document.getElementById('mainChart');
+  if (canvas) {
+    chartEngine = new ChartEngine(canvas);
+    if (d && d.closes) {
+      chartEngine.setData({
+        opens: d.opens,
+        highs: d.highs,
+        lows: d.lows,
+        closes: d.closes,
+        timestamps: d.timestamps,
+        ma10Arr: d.ma10Arr,
+        ma20Arr: d.ma20Arr,
+        crosses: d.crosses
+      });
+
+      // Add trade overlays
+      const overlays = [];
+      if (trade) {
+        overlays.push({price: trade.entryPrice, label: 'ENTRY', color: '#89b4fa', dash: [6,3]});
+        overlays.push({price: trade.stopPrice, label: 'STOP', color: '#f38ba8', dash: [6,3]});
+        if (trade.pyramidLayers) {
+          trade.pyramidLayers.forEach((layer, i) => {
+            if (i > 0) overlays.push({price: layer.triggerPrice, label: `ADD LAYER ${i+1}`, color: '#f9e2af', dash: [4,4]});
+          });
+        }
+        // 5x ATR profit lock
+        if (d.atr && trade.entryPrice) {
+          const atrGain = (d.price - trade.entryPrice) / d.atr;
+          if (atrGain >= 5) {
+            const tightStop = d.price - 2 * d.atr;
+            overlays.push({price: tightStop, label: 'TIGHT STOP (2x ATR)', color: '#fab387', dash: [3,3]});
+          }
+        }
+      }
+      chartEngine.setOverlays(overlays);
+    } else if (!d) {
+      loadTickerData(ticker).then(() => renderChartScreen());
+    }
+  }
+}
+
+function openCalcFromChart(ticker) {
+  const d = state.tickerData[ticker];
+  state.calcPrefill = {
+    ticker,
+    entryPrice: d ? d.price : '',
+    atr: d ? d.atr : ''
+  };
+  navigateTo('calculator');
+}
+
+function openChecklistFromChart(ticker) {
+  const pk = getProfileKey();
+  profiles[pk].checklistTicker = ticker;
+  profiles[pk].checklist = {};
+  saveProfiles(profiles);
+  navigateTo('checklist');
+}
+
+// ─── CALCULATOR ───
+function renderCalculator() {
+  const content = document.getElementById('content');
+  const pf = state.calcPrefill || {};
+
+  // Build ticker options from all known tickers
+  const allTickers = getAllTickers();
+  const tickerOptions = allTickers.map(t => `<option value="${t}">${t}</option>`).join('');
+
+  content.innerHTML = `
+    <div class="screen active">
+      <div class="calc-wrap">
+        <h2 style="margin-bottom:16px">Position Size Calculator</h2>
+        <div class="calc-card">
+          <div class="form-group">
+            <label>Ticker</label>
+            <div style="display:flex;gap:8px">
+              <input type="text" id="calcTicker" value="${pf.ticker || ''}" placeholder="Enter ticker symbol" style="text-transform:uppercase" list="tickerList">
+              <datalist id="tickerList">${tickerOptions}</datalist>
+              <button class="btn btn-sm btn-primary" onclick="lookupCalcTicker()" style="white-space:nowrap">Look Up</button>
+            </div>
+            <div class="hint">Enter a ticker and click Look Up to auto-fill price and ATR</div>
+          </div>
+          <div class="form-group">
+            <label>Account Size ($)</label>
+            <input type="number" id="calcAccount" placeholder="Enter account size" oninput="updateCalc()">
+          </div>
+          <div class="form-group">
+            <label>Entry Price ($)</label>
+            <input type="number" id="calcEntry" value="${pf.entryPrice || ''}" placeholder="Enter price" oninput="updateCalc()">
+          </div>
+          <div class="form-group">
+            <label>14-Day ATR (Auto-Calculated)</label>
+            <input type="number" id="calcATR" value="${pf.atr ? pf.atr.toFixed(2) : ''}" readonly>
+            <div class="hint">Auto-calculated from live price data using the Wilder method</div>
+          </div>
+
+          <div class="calc-outputs">
+            <div class="calc-output"><div class="label">Stop Price</div><div class="val" id="calcStop">--</div></div>
+            <div class="calc-output"><div class="label">Target Price (2R)</div><div class="val" id="calcTarget2R">--</div></div>
+            <div class="calc-output"><div class="label">Dollar Risk</div><div class="val" id="calcDollarRisk">--</div></div>
+            <div class="calc-output"><div class="label">Position Size</div><div class="val" id="calcShares">--</div></div>
+            <div class="calc-output"><div class="label">Total Invested</div><div class="val" id="calcInvested">--</div></div>
+            <div class="calc-output"><div class="label">Risk % of Account</div><div class="val" id="calcRiskPct">--</div></div>
+          </div>
+
+          <div id="calcWarning"></div>
+
+          <button class="btn btn-green" style="width:100%;margin-top:12px" onclick="confirmTrade()">Confirm Trade</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function lookupCalcTicker() {
+  const input = document.getElementById('calcTicker');
+  const ticker = (input.value || '').trim().toUpperCase();
+  if (!ticker) { showToast('Enter a ticker symbol'); return; }
+  input.value = ticker;
+  showToast(`Looking up ${ticker}...`);
+  const d = await loadTickerData(ticker);
+  if (d && !d.error) {
+    document.getElementById('calcEntry').value = d.price.toFixed(2);
+    document.getElementById('calcATR').value = d.atr ? d.atr.toFixed(2) : '';
+    state.calcPrefill = {ticker, entryPrice: d.price, atr: d.atr};
+    showToast(`${ticker}: $${d.price.toFixed(2)} | ATR: ${d.atr ? d.atr.toFixed(2) : 'N/A'}`);
+    updateCalc();
+  } else {
+    showToast(`Could not load data for ${ticker}`);
+  }
+}
+
+function updateCalc() {
+  const account = parseFloat(document.getElementById('calcAccount').value);
+  const entry = parseFloat(document.getElementById('calcEntry').value);
+  const atr = parseFloat(document.getElementById('calcATR').value);
+
+  if (!account || !entry || !atr) return;
+
+  const stopDist = 3 * atr;
+  const stopPrice = entry - stopDist;
+  const dollarRisk = account * 0.005; // Target 0.5% risk
+  const shares = Math.round((dollarRisk / stopDist) * 100) / 100; // 2 decimal places for fractional shares
+  const invested = shares * entry;
+  const actualRisk = (shares * stopDist);
+  const riskPct = (actualRisk / account) * 100;
+  const target2R = entry + 2 * stopDist;
+
+  document.getElementById('calcStop').textContent = '$' + stopPrice.toFixed(2);
+  document.getElementById('calcTarget2R').textContent = '$' + target2R.toFixed(2);
+  document.getElementById('calcDollarRisk').textContent = '$' + actualRisk.toFixed(2);
+  document.getElementById('calcShares').textContent = shares.toFixed(2) + ' shares';
+  document.getElementById('calcInvested').textContent = '$' + fmt(invested);
+  document.getElementById('calcRiskPct').textContent = riskPct.toFixed(2) + '%';
+
+  let warnHtml = '';
+  if (riskPct <= 0.5) {
+    warnHtml = '<div class="risk-warning green">Risk is at or below 0.5% of account. Position sized correctly.</div>';
+  } else if (riskPct <= 1.0) {
+    warnHtml = '<div class="risk-warning yellow">Warning: Risk exceeds 0.5% of account (' + riskPct.toFixed(2) + '%)</div>';
+  } else {
+    warnHtml = '<div class="risk-warning red">Danger: Risk exceeds 1% of account (' + riskPct.toFixed(2) + '%). Reduce position size.</div>';
+  }
+  document.getElementById('calcWarning').innerHTML = warnHtml;
+
+  // Store for trade confirmation
+  state._calcResult = {stopPrice, stopDist, dollarRisk: actualRisk, shares, invested, riskPct, entry, atr, account};
+}
+
+function confirmTrade() {
+  const r = state._calcResult;
+  const pf = state.calcPrefill || {};
+  if (!r || !r.shares) { showToast('Fill in all fields first'); return; }
+
+  const tickerInput = document.getElementById('calcTicker');
+  const ticker = (pf.ticker || (tickerInput && tickerInput.value) || prompt('Enter ticker symbol:'));
+  if (!ticker) return;
+
+  const pk = getProfileKey();
+  const trade = {
+    id: Date.now(),
+    ticker: ticker.toUpperCase(),
+    entryDate: new Date().toISOString().split('T')[0],
+    entryPrice: r.entry,
+    stopPrice: r.stopPrice,
+    atr: r.atr,
+    initialDollarRisk: r.dollarRisk,
+    dollarRisk: r.dollarRisk,
+    shares: r.shares,
+    accountSize: r.account,
+    riskPct: r.riskPct,
+    pyramidLayers: [{
+      layer: 1,
+      triggerPrice: r.entry,
+      shares: r.shares,
+      status: 'FILLED'
+    }],
+    totalShares: r.shares
+  };
+
+  // Add pending pyramid layers (up to 10)
+  for (let i = 2; i <= 10; i++) {
+    const triggerPrice = r.entry + (i - 1) * r.atr;
+    trade.pyramidLayers.push({
+      layer: i,
+      triggerPrice,
+      shares: 0,
+      status: i === 2 ? 'NEXT ADD' : 'PENDING'
+    });
+  }
+
+  profiles[pk].trades = profiles[pk].trades || [];
+  profiles[pk].trades.push(trade);
+  saveProfiles(profiles);
+
+  state.calcPrefill = null;
+  state._calcResult = null;
+  showToast(`Trade opened: ${trade.ticker} x${trade.shares} shares`);
+  navigateTo('portfolio');
+}
+
+// ─── PORTFOLIO ───
+function renderPortfolio() {
+  const content = document.getElementById('content');
+  const pk = getProfileKey();
+  const trades = profiles[pk].trades || [];
+
+  let totalPnL = 0;
+  let totalRisk = 0;
+  let alerts = 0;
+
+  const tradeCards = trades.map((trade, idx) => {
+    const d = state.tickerData[trade.ticker];
+    const currentPrice = d ? d.price : trade.entryPrice;
+    const currentATR = d ? d.atr : trade.atr;
+    const pnl = (currentPrice - trade.entryPrice) * trade.totalShares;
+    const rMultiple = trade.initialDollarRisk ? pnl / trade.initialDollarRisk : 0;
+    const atrGain = currentATR ? (currentPrice - trade.entryPrice) / currentATR : 0;
+    const tightenAlert = atrGain >= 5;
+    if (tightenAlert) alerts++;
+    totalPnL += pnl;
+    totalRisk += trade.dollarRisk || 0;
+
+    let pyramidHtml = '<table class="pyramid-table"><thead><tr><th>Layer</th><th>Trigger</th><th>Shares</th><th>Status</th></tr></thead><tbody>';
+    trade.pyramidLayers.forEach(layer => {
+      const statusClass = layer.status === 'FILLED' ? 'filled' : layer.status === 'NEXT ADD' ? 'next' : 'pending';
+      const isNext = layer.status === 'NEXT ADD';
+      pyramidHtml += `<tr class="${isNext?'next-add':''}"><td>${layer.layer}</td><td style="font-family:var(--mono)">$${layer.triggerPrice.toFixed(2)}</td><td style="font-family:var(--mono)">${layer.shares}</td><td><span class="pyramid-status ${statusClass}">${layer.status}</span></td></tr>`;
+    });
+    pyramidHtml += '</tbody></table>';
+
+    return `<div class="trade-card">
+      <div class="trade-header">
+        <div>
+          <div class="trade-ticker">${trade.ticker}</div>
+          <div class="trade-date">Entered: ${trade.entryDate}</div>
+        </div>
+        <span class="signal-badge ${pnl>=0?'long':'short'}" style="font-size:13px">${pnl>=0?'+':''}$${fmt(Math.abs(pnl))}</span>
+      </div>
+      ${tightenAlert ? '<div class="tighten-alert">TIGHTEN STOP - Unrealized gain exceeds 5x ATR! Move stop to 2x ATR trailing.</div>' : ''}
+      <div class="trade-stats">
+        <div class="stat"><div class="label">Entry</div><div class="val">$${trade.entryPrice.toFixed(2)}</div></div>
+        <div class="stat"><div class="label">Current</div><div class="val">$${currentPrice.toFixed(2)}</div></div>
+        <div class="stat"><div class="label">P&L (R)</div><div class="val" style="color:${rMultiple>=0?'#40a02b':'#d20f39'}">${rMultiple>=0?'+':''}${rMultiple.toFixed(2)}R</div></div>
+        <div class="stat"><div class="label">Stop</div><div class="val">$${trade.stopPrice.toFixed(2)}</div></div>
+        <div class="stat"><div class="label">ATR</div><div class="val">${currentATR?currentATR.toFixed(2):'--'}</div></div>
+        <div class="stat"><div class="label">ATR Gain</div><div class="val" style="color:${atrGain>=5?'#df8e1d':atrGain>=0?'#40a02b':'#d20f39'}">${atrGain.toFixed(2)}x</div></div>
+        <div class="stat"><div class="label">Total Shares</div><div class="val">${trade.totalShares}</div></div>
+      </div>
+      ${pyramidHtml}
+      <div class="trade-actions">
+        <button class="btn btn-sm btn-primary" onclick="addPyramidLayer(${idx})">Add Layer</button>
+        ${tightenAlert ? `<button class="btn btn-sm btn-amber" onclick="tightenStop(${idx})">Tighten Stop</button>` : ''}
+        <button class="btn btn-sm btn-red" onclick="exitTrade(${idx})">Exit Trade</button>
+        <button class="btn btn-sm btn-outline" onclick="navigateTo('chart',{ticker:'${trade.ticker}'})">View Chart</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  content.innerHTML = `
+    <div class="screen active">
+      <h2 style="margin-bottom:16px">Portfolio & Pyramid Tracker</h2>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:16px">Profile: <strong style="color:var(--text)">${state.activeProfile}</strong></div>
+
+      <div class="summary-row">
+        <div class="summary-card"><div class="label">Open Trades</div><div class="value">${trades.length}</div></div>
+        <div class="summary-card"><div class="label">Unrealized P&L</div><div class="value ${totalPnL>=0?'green':'red'}">${totalPnL>=0?'+':''}$${fmt(Math.abs(totalPnL))}</div></div>
+        <div class="summary-card"><div class="label">Total Open Risk</div><div class="value">$${fmt(totalRisk)}</div></div>
+        <div class="summary-card"><div class="label">Alerts</div><div class="value amber">${alerts}</div></div>
+      </div>
+
+      ${trades.length === 0 && !(profiles[pk].ibkrConnected && profiles[pk].ibkrPositions.length > 0) ? '<div style="text-align:center;padding:40px;color:var(--text3)"><p style="font-size:15px">No open trades</p><p style="margin-top:8px;font-size:13px">Use the Position Size Calculator to enter a new trade, or connect your IBKR account below</p></div>' : tradeCards}
+
+      ${renderIBKRSection(pk)}
+    </div>
+  `;
+}
+
+function renderIBKRSection(pk) {
+  const profile = profiles[pk];
+  const connected = profile.ibkrConnected;
+  const positions = profile.ibkrPositions || [];
+  const balance = profile.ibkrBalance;
+
+  let html = '<div class="ibkr-section">';
+  html += `<h3><span class="ibkr-status-dot ${connected?'connected':'disconnected'}"></span>Interactive Brokers ${connected ? '<span class="ibkr-badge">LIVE</span>' : ''}</h3>`;
+
+  if (!connected) {
+    html += `<div class="ibkr-connect-row">
+      <div class="form-group">
+        <label>Gateway URL</label>
+        <input type="text" id="ibkrUrl" value="${profile.ibkrGatewayUrl || 'https://localhost:5000'}" placeholder="https://localhost:5000">
+      </div>
+      <button class="btn btn-primary" onclick="ibkrSaveAndConnect()">Connect</button>
+    </div>
+    <div style="font-size:12px;color:var(--text3);line-height:1.5">
+      <strong>Setup:</strong> Download and run the <a href="https://www.interactivebrokers.com/en/trading/ib-api.php" target="_blank" style="color:var(--blue)">IBKR Client Portal Gateway</a> on your machine.
+      Log in through its web UI, then click Connect here.
+    </div>`;
+  } else {
+    // Account summary
+    html += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:13px;color:var(--text2)">Account: <strong style="font-family:var(--mono)">${profile.ibkrAccountId}</strong></div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm btn-outline" onclick="ibkrSyncCurrent()">Sync Now</button>
+        <button class="btn btn-sm btn-red" onclick="ibkrDisconnectCurrent()">Disconnect</button>
+      </div>
+    </div>`;
+
+    if (balance) {
+      html += `<div class="ibkr-account-info">
+        <div class="stat"><div class="label">Net Liquidation</div><div class="val">$${fmt(balance.netliquidation)}</div></div>
+        <div class="stat"><div class="label">Cash</div><div class="val">$${fmt(balance.totalcashvalue)}</div></div>
+        <div class="stat"><div class="label">Positions Value</div><div class="val">$${fmt(balance.grosspositionvalue)}</div></div>
+        <div class="stat"><div class="label">Buying Power</div><div class="val">$${fmt(balance.buyingpower)}</div></div>
+      </div>`;
+    }
+
+    // IBKR positions
+    if (positions.length > 0) {
+      html += `<div class="section-header" style="margin-top:16px"><h2 style="font-size:14px">Broker Positions</h2><span class="count">${positions.length} positions</span></div>`;
+
+      let ibkrTotalPnl = 0;
+      positions.forEach(pos => {
+        ibkrTotalPnl += pos.unrealizedPnl;
+        const pnlPct = pos.avgCost > 0 ? ((pos.mktPrice - pos.avgCost) / pos.avgCost * 100) : 0;
+        const isLong = pos.shares > 0;
+
+        html += `<div class="ibkr-pos-card">
+          <div class="pos-header">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="pos-ticker">${pos.ticker}</span>
+              <span class="ibkr-badge">IBKR</span>
+              <span style="font-size:11px;color:var(--text3)">${pos.assetClass}</span>
+            </div>
+            <span style="font-family:var(--mono);font-weight:700;font-size:15px;color:${pos.unrealizedPnl>=0?'#26a69a':'#ef5350'}">${pos.unrealizedPnl>=0?'+':''}$${fmt(Math.abs(pos.unrealizedPnl))}</span>
+          </div>
+          <div class="pos-stats">
+            <div class="stat"><div class="label">${isLong?'Long':'Short'} Shares</div><div class="val">${Math.abs(pos.shares).toFixed(2)}</div></div>
+            <div class="stat"><div class="label">Avg Cost</div><div class="val">$${pos.avgCost.toFixed(2)}</div></div>
+            <div class="stat"><div class="label">Mkt Price</div><div class="val">$${pos.mktPrice.toFixed(2)}</div></div>
+            <div class="stat"><div class="label">Mkt Value</div><div class="val">$${fmt(Math.abs(pos.mktValue))}</div></div>
+            <div class="stat"><div class="label">P&L %</div><div class="val" style="color:${pnlPct>=0?'#26a69a':'#ef5350'}">${pnlPct>=0?'+':''}${pnlPct.toFixed(2)}%</div></div>
+            <div class="stat"><div class="label">Realized P&L</div><div class="val">$${fmt(pos.realizedPnl)}</div></div>
+          </div>
+        </div>`;
+      });
+
+      html += `<div style="text-align:right;font-size:13px;font-weight:600;font-family:var(--mono);color:${ibkrTotalPnl>=0?'#26a69a':'#ef5350'};margin-top:4px">Total Unrealized: ${ibkrTotalPnl>=0?'+':''}$${fmt(Math.abs(ibkrTotalPnl))}</div>`;
+    } else {
+      html += '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">No open positions in this IBKR account</div>';
+    }
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function addPyramidLayer(tradeIdx) {
+  const pk = getProfileKey();
+  const trade = profiles[pk].trades[tradeIdx];
+  if (!trade) return;
+
+  const nextLayer = trade.pyramidLayers.find(l => l.status === 'NEXT ADD');
+  if (!nextLayer) { showToast('All layers filled'); return; }
+
+  state.calcPrefill = {
+    ticker: trade.ticker,
+    entryPrice: nextLayer.triggerPrice,
+    atr: trade.atr
+  };
+  navigateTo('calculator');
+}
+
+function tightenStop(tradeIdx) {
+  const pk = getProfileKey();
+  const trade = profiles[pk].trades[tradeIdx];
+  if (!trade) return;
+
+  const d = state.tickerData[trade.ticker];
+  const currentATR = d ? d.atr : trade.atr;
+  const currentPrice = d ? d.price : trade.entryPrice;
+  trade.stopPrice = currentPrice - 2 * currentATR;
+  saveProfiles(profiles);
+  showToast(`Stop tightened to $${trade.stopPrice.toFixed(2)} (2x ATR)`);
+  renderPortfolio();
+}
+
+function exitTrade(tradeIdx) {
+  const pk = getProfileKey();
+  const trade = profiles[pk].trades[tradeIdx];
+  if (!trade) return;
+
+  const d = state.tickerData[trade.ticker];
+  const exitPrice = d ? d.price : parseFloat(prompt('Enter exit price:'));
+  if (!exitPrice) return;
+
+  const pnl = (exitPrice - trade.entryPrice) * trade.totalShares;
+  const rMultiple = trade.initialDollarRisk ? pnl / trade.initialDollarRisk : 0;
+  const rulesFollowed = confirm('Were all system rules followed? OK = Yes, Cancel = No');
+
+  // Show modal for notes
+  const notes = prompt('Trade notes (optional):') || '';
+
+  const journalEntry = {
+    id: Date.now(),
+    ticker: trade.ticker,
+    entryDate: trade.entryDate,
+    exitDate: new Date().toISOString().split('T')[0],
+    entryPrice: trade.entryPrice,
+    exitPrice,
+    pnl,
+    rMultiple,
+    rulesFollowed,
+    notes,
+    shares: trade.totalShares
+  };
+
+  profiles[pk].journal = profiles[pk].journal || [];
+  profiles[pk].journal.push(journalEntry);
+  profiles[pk].trades.splice(tradeIdx, 1);
+  saveProfiles(profiles);
+
+  showToast(`Trade closed: ${trade.ticker} ${pnl>=0?'+':''}$${fmt(Math.abs(pnl))}`);
+  renderPortfolio();
+}
+
+// ─── CHECKLIST ───
+function renderChecklist() {
+  const content = document.getElementById('content');
+  const pk = getProfileKey();
+  const checkState = profiles[pk].checklist || {};
+  const ticker = profiles[pk].checklistTicker || state.selectedTicker || '--';
+  const d = state.tickerData[ticker];
+
+  const checkedCount = Object.values(checkState).filter(Boolean).length;
+  const allChecked = checkedCount === CHECKLIST_ITEMS.length;
+
+  let itemsHtml = '';
+  CHECKLIST_ITEMS.forEach((item, i) => {
+    const checked = checkState[i];
+    itemsHtml += `<li class="checklist-item${checked?' checked':''}" onclick="toggleChecklistItem(${i})">
+      <div class="check-box">${checked ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e1e2e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}</div>
+      <div class="check-text">${item}</div>
+    </li>`;
+  });
+
+  content.innerHTML = `
+    <div class="screen active">
+      <div class="checklist-wrap">
+        <h2 style="margin-bottom:16px">Pre-Trade Checklist</h2>
+        <div style="font-size:13px;color:var(--text3);margin-bottom:16px">Profile: <strong style="color:var(--text)">${state.activeProfile}</strong></div>
+        <div class="checklist-card">
+          <div class="checklist-ticker">
+            <div class="ticker">${ticker}</div>
+            ${d ? `<span class="signal-badge ${d.signal.toLowerCase()}" style="margin-top:6px">${d.signal}</span>` : ''}
+          </div>
+          <div style="text-align:center;font-size:13px;color:var(--text3)">${checkedCount} of ${CHECKLIST_ITEMS.length} complete</div>
+          <div class="progress-bar"><div class="fill" style="width:${(checkedCount/CHECKLIST_ITEMS.length)*100}%"></div></div>
+          <ul class="checklist-items">${itemsHtml}</ul>
+          <div class="confirmed-banner${allChecked?' show':''}">
+            Place the trade with confidence and let the system manage the rest
+          </div>
+          <div style="margin-top:16px;display:flex;gap:8px">
+            <button class="btn btn-outline" onclick="resetChecklist()">Reset</button>
+            ${allChecked ? `<button class="btn btn-green" onclick="openCalcFromChart('${ticker}')">Open Calculator</button>` : ''}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function toggleChecklistItem(idx) {
+  const pk = getProfileKey();
+  profiles[pk].checklist = profiles[pk].checklist || {};
+  profiles[pk].checklist[idx] = !profiles[pk].checklist[idx];
+  saveProfiles(profiles);
+  renderChecklist();
+}
+
+function resetChecklist() {
+  const pk = getProfileKey();
+  profiles[pk].checklist = {};
+  saveProfiles(profiles);
+  renderChecklist();
+}
+
+// ─── JOURNAL ───
+let journalSortKey = 'exitDate';
+let journalSortDir = 'desc';
+
+function renderJournal() {
+  const content = document.getElementById('content');
+  const pk = getProfileKey();
+  let journal = [...(profiles[pk].journal || [])];
+
+  // Sort
+  journal.sort((a, b) => {
+    let va = a[journalSortKey], vb = b[journalSortKey];
+    if (typeof va === 'string') { va = va || ''; vb = vb || ''; return journalSortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va); }
+    return journalSortDir === 'asc' ? (va||0) - (vb||0) : (vb||0) - (va||0);
+  });
+
+  // Stats
+  const totalTrades = journal.length;
+  const wins = journal.filter(j => j.pnl > 0);
+  const losses = journal.filter(j => j.pnl <= 0);
+  const winRate = totalTrades > 0 ? (wins.length / totalTrades) * 100 : 0;
+  const avgWinR = wins.length > 0 ? wins.reduce((s, j) => s + j.rMultiple, 0) / wins.length : 0;
+  const avgLossR = losses.length > 0 ? losses.reduce((s, j) => s + Math.abs(j.rMultiple), 0) / losses.length : 0;
+  const expectancy = totalTrades > 0 ? (winRate/100) * avgWinR - ((100-winRate)/100) * avgLossR : 0;
+
+  const sortIcon = (key) => journalSortKey === key ? (journalSortDir === 'asc' ? ' ↑' : ' ↓') : '';
+
+  let rows = '';
+  journal.forEach(j => {
+    rows += `<tr>
+      <td style="font-weight:700">${j.ticker}</td>
+      <td>${j.entryDate}</td>
+      <td>${j.exitDate}</td>
+      <td style="font-family:var(--mono)">$${j.entryPrice.toFixed(2)}</td>
+      <td style="font-family:var(--mono)">$${j.exitPrice.toFixed(2)}</td>
+      <td style="font-family:var(--mono);color:${j.pnl>=0?'#40a02b':'#d20f39'}">${j.pnl>=0?'+':''}$${fmt(Math.abs(j.pnl))}</td>
+      <td style="font-family:var(--mono);color:${j.rMultiple>=0?'#40a02b':'#d20f39'}">${j.rMultiple>=0?'+':''}${j.rMultiple.toFixed(2)}R</td>
+      <td><span class="rules-badge ${j.rulesFollowed?'yes':'no'}">${j.rulesFollowed?'Yes':'No'}</span></td>
+      <td style="font-size:11px;color:var(--text3);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(j.notes||'')}">${j.notes||''}</td>
+    </tr>`;
+  });
+
+  content.innerHTML = `
+    <div class="screen active">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <h2>Trade Journal</h2>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sm btn-outline" onclick="addManualJournalEntry()">+ Manual Entry</button>
+          <button class="btn btn-sm btn-primary" onclick="exportJournalCSV()">Export CSV</button>
+        </div>
+      </div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:16px">Profile: <strong style="color:var(--text)">${state.activeProfile}</strong></div>
+
+      <div class="journal-summary">
+        <div class="journal-stat"><div class="label">Closed Trades</div><div class="val">${totalTrades}</div></div>
+        <div class="journal-stat"><div class="label">Win Rate</div><div class="val" style="color:${winRate>=50?'#40a02b':'#d20f39'}">${winRate.toFixed(1)}%</div></div>
+        <div class="journal-stat"><div class="label">Avg Win (R)</div><div class="val green">+${avgWinR.toFixed(2)}R</div></div>
+        <div class="journal-stat"><div class="label">Avg Loss (R)</div><div class="val red">-${avgLossR.toFixed(2)}R</div></div>
+        <div class="journal-stat"><div class="label">Expectancy</div><div class="val" style="color:${expectancy>=0?'#40a02b':'#d20f39'}">${expectancy>=0?'+':''}${expectancy.toFixed(3)}R</div></div>
+      </div>
+
+      ${totalTrades === 0 ? '<div style="text-align:center;padding:40px;color:var(--text3)"><p style="font-size:15px">No closed trades yet</p></div>' : `
+      <div class="journal-table-wrap"><table class="journal-table">
+        <thead><tr>
+          <th onclick="sortJournal('ticker')">Ticker${sortIcon('ticker')}</th>
+          <th onclick="sortJournal('entryDate')">Entry${sortIcon('entryDate')}</th>
+          <th onclick="sortJournal('exitDate')">Exit${sortIcon('exitDate')}</th>
+          <th>Entry $</th><th>Exit $</th>
+          <th onclick="sortJournal('pnl')">P&L${sortIcon('pnl')}</th>
+          <th onclick="sortJournal('rMultiple')">R Multiple${sortIcon('rMultiple')}</th>
+          <th>Rules</th><th>Notes</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>`}
+    </div>
+  `;
+}
+
+function sortJournal(key) {
+  if (journalSortKey === key) journalSortDir = journalSortDir === 'asc' ? 'desc' : 'asc';
+  else { journalSortKey = key; journalSortDir = 'desc'; }
+  renderJournal();
+}
+
+function addManualJournalEntry() {
+  const ticker = prompt('Ticker symbol:');
+  if (!ticker) return;
+  const entryDate = prompt('Entry date (YYYY-MM-DD):');
+  const exitDate = prompt('Exit date (YYYY-MM-DD):');
+  const entryPrice = parseFloat(prompt('Entry price:'));
+  const exitPrice = parseFloat(prompt('Exit price:'));
+  const shares = parseInt(prompt('Number of shares:'));
+  const initialRisk = parseFloat(prompt('Initial dollar risk on trade:'));
+  if (!entryPrice || !exitPrice || !shares) return;
+
+  const pnl = (exitPrice - entryPrice) * shares;
+  const rMultiple = initialRisk ? pnl / initialRisk : 0;
+  const rulesFollowed = confirm('Were all system rules followed?');
+  const notes = prompt('Notes (optional):') || '';
+
+  const pk = getProfileKey();
+  profiles[pk].journal = profiles[pk].journal || [];
+  profiles[pk].journal.push({
+    id: Date.now(), ticker: ticker.toUpperCase(), entryDate, exitDate,
+    entryPrice, exitPrice, pnl, rMultiple, rulesFollowed, notes, shares
+  });
+  saveProfiles(profiles);
+  showToast('Journal entry added');
+  renderJournal();
+}
+
+function exportJournalCSV() {
+  const pk = getProfileKey();
+  const journal = profiles[pk].journal || [];
+  if (journal.length === 0) { showToast('No entries to export'); return; }
+
+  let csv = 'Ticker,Entry Date,Exit Date,Entry Price,Exit Price,Shares,P&L,R Multiple,Rules Followed,Notes\n';
+  journal.forEach(j => {
+    csv += `${j.ticker},${j.entryDate},${j.exitDate},${j.entryPrice},${j.exitPrice},${j.shares||''},${j.pnl.toFixed(2)},${j.rMultiple.toFixed(2)},${j.rulesFollowed?'Yes':'No'},"${(j.notes||'').replace(/"/g,'""')}"\n`;
+  });
+
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `trendpulse_journal_${state.activeProfile.toLowerCase()}_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV exported');
+}
+
+// ─── UTILS ───
+function fmt(n) {
+  if (n == null || isNaN(n)) return '--';
+  if (Math.abs(n) >= 1000) return n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  return n.toFixed(2);
+}
+
+function fmtB(n) {
+  if (n >= 1e12) return (n/1e12).toFixed(1) + 'T';
+  if (n >= 1e9) return (n/1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+  return n.toLocaleString();
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─── THEME ───
+function applyTheme() {
+  document.documentElement.setAttribute('data-theme', state.darkMode ? 'dark' : 'light');
+  document.querySelector('meta[name="theme-color"]').content = state.darkMode ? '#1e1e2e' : '#f4f6f9';
+  localStorage.setItem('tp_dark', state.darkMode ? '1' : '0');
+}
+
+// ─── NOTIFICATIONS & ALERTS ───
+let previousCrossStates = {}; // Track crossover states between refreshes
+let alertQueue = [];
+let currentAlertTicker = null;
+
+function initNotifications() {
+  // Load previous cross states from localStorage
+  const saved = localStorage.getItem('tp_cross_states');
+  if (saved) previousCrossStates = JSON.parse(saved);
+
+  // Update notification button state
+  updateNotifBtn();
+}
+
+function updateNotifBtn() {
+  const btn = document.getElementById('notifBtn');
+  if (!btn) return;
+  const granted = Notification.permission === 'granted';
+  btn.style.borderColor = granted ? 'var(--green)' : '';
+  btn.title = granted ? 'Notifications enabled' : 'Enable notifications';
+}
+
+async function toggleNotifications() {
+  if (!('Notification' in window)) {
+    showToast('Notifications not supported in this browser');
+    return;
+  }
+  if (Notification.permission === 'granted') {
+    showToast('Notifications are already enabled');
+    return;
+  }
+  if (Notification.permission === 'denied') {
+    showToast('Notifications blocked. Enable in browser settings.');
+    return;
+  }
+  const result = await Notification.requestPermission();
+  if (result === 'granted') {
+    showToast('Notifications enabled! You\'ll be alerted on crossovers.');
+    // Play a test sound
+    playAlertSound('confirm');
+  }
+  updateNotifBtn();
+}
+
+function playAlertSound(type) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    if (type === 'cross') {
+      // Urgent two-tone alert
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.15);
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.3);
+      osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.45);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.6);
+    } else {
+      // Soft confirmation chime
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523, ctx.currentTime);
+      osc.frequency.setValueAtTime(659, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.25);
+    }
+  } catch(e) {}
+}
+
+function checkForNewCrossovers() {
+  const tickers = getAllTickers();
+  const newCrosses = [];
+
+  tickers.forEach(ticker => {
+    const d = state.tickerData[ticker];
+    if (!d || !d.crosses || d.crosses.length === 0) return;
+
+    const lastCross = d.crosses[d.crosses.length - 1];
+    const crossKey = `${ticker}_${lastCross.timestamp}`;
+    const prevKey = previousCrossStates[ticker];
+
+    if (prevKey !== crossKey) {
+      // This is a new crossover we haven't seen before
+      // Only alert if we had a previous state (skip initial load)
+      if (prevKey !== undefined) {
+        newCrosses.push({
+          ticker,
+          type: lastCross.type,
+          price: d.price,
+          name: d.name || ticker
+        });
+      }
+      previousCrossStates[ticker] = crossKey;
+    }
+  });
+
+  // Save updated states
+  localStorage.setItem('tp_cross_states', JSON.stringify(previousCrossStates));
+
+  if (newCrosses.length > 0) {
+    // Play alert sound
+    playAlertSound('cross');
+
+    // Show notification dot
+    const dot = document.getElementById('notifDot');
+    if (dot) dot.classList.add('show');
+
+    // Send browser notifications
+    if (Notification.permission === 'granted') {
+      newCrosses.forEach(cross => {
+        const direction = cross.type === 'bullish' ? 'BULLISH' : 'BEARISH';
+        const action = cross.type === 'bullish' ? 'MA10 crossed ABOVE MA20' : 'MA10 crossed BELOW MA20';
+        const n = new Notification(`${direction} Cross: ${cross.ticker}`, {
+          body: `${cross.name}\n${action}\nPrice: $${fmt(cross.price)}`,
+          icon: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="' + (cross.type === 'bullish' ? '#a6e3a1' : '#f38ba8') + '"/><text x="32" y="42" text-anchor="middle" font-size="28" fill="#1e1e2e" font-weight="bold">' + (cross.type === 'bullish' ? '&#8593;' : '&#8595;') + '</text></svg>'),
+          tag: `cross-${cross.ticker}`,
+          requireInteraction: true
+        });
+        n.onclick = () => {
+          window.focus();
+          navigateTo('chart', {ticker: cross.ticker});
+          n.close();
+        };
+      });
+    }
+
+    // Show visual alert banner
+    if (newCrosses.length === 1) {
+      const c = newCrosses[0];
+      const dir = c.type === 'bullish' ? 'BULLISH' : 'BEARISH';
+      currentAlertTicker = c.ticker;
+      showAlertBanner(`<strong>${dir} CROSS: ${c.ticker}</strong> &mdash; ${c.name} &mdash; MA10 crossed ${c.type === 'bullish' ? 'above' : 'below'} MA20 at $${fmt(c.price)}. Action required!`);
+    } else {
+      currentAlertTicker = newCrosses[0].ticker;
+      const tickers = newCrosses.map(c => c.ticker).join(', ');
+      showAlertBanner(`<strong>${newCrosses.length} NEW CROSSOVERS:</strong> ${tickers} &mdash; Check the dashboard for signal changes. Action required!`);
+    }
+  }
+}
+
+function showAlertBanner(html) {
+  const banner = document.getElementById('alertBanner');
+  const text = document.getElementById('alertText');
+  text.innerHTML = html;
+  banner.classList.add('show');
+  // Auto-dismiss after 30 seconds
+  clearTimeout(state._alertTimeout);
+  state._alertTimeout = setTimeout(() => dismissAlert(), 30000);
+}
+
+function dismissAlert() {
+  document.getElementById('alertBanner').classList.remove('show');
+  const dot = document.getElementById('notifDot');
+  if (dot) dot.classList.remove('show');
+  clearTimeout(state._alertTimeout);
+}
+
+function viewAlertTicker() {
+  if (currentAlertTicker) {
+    navigateTo('chart', {ticker: currentAlertTicker});
+  }
+  dismissAlert();
+}
+
+// ─── IBKR CLIENT PORTAL GATEWAY ───
+async function ibkrFetch(pk, endpoint, method='GET', body=null) {
+  const profile = profiles[pk];
+  if (!profile) return null;
+  const baseUrl = profile.ibkrGatewayUrl || 'https://localhost:5000';
+  const url = baseUrl + endpoint;
+  try {
+    const opts = {method, headers:{'Content-Type':'application/json'}};
+    if (body) opts.body = JSON.stringify(body);
+    const resp = await fetchWithTimeout(url, 6000);
+    return resp;
+  } catch(e) {
+    return null;
+  }
+}
+
+async function ibkrCheckAuth(pk) {
+  const profile = profiles[pk];
+  const baseUrl = profile.ibkrGatewayUrl || 'https://localhost:5000';
+  try {
+    const resp = await fetch(baseUrl + '/v1/api/iserver/auth/status', {
+      method: 'POST', headers:{'Content-Type':'application/json'}, body: '{}'
+    });
+    const data = await resp.json();
+    return data; // {authenticated: true/false, connected: true/false, ...}
+  } catch(e) {
+    return null;
+  }
+}
+
+async function ibkrGetAccounts(pk) {
+  const profile = profiles[pk];
+  const baseUrl = profile.ibkrGatewayUrl || 'https://localhost:5000';
+  try {
+    const resp = await fetch(baseUrl + '/v1/api/portfolio/accounts');
+    return await resp.json(); // [{id, accountId, accountTitle, ...}]
+  } catch(e) { return null; }
+}
+
+async function ibkrGetPositions(pk) {
+  const profile = profiles[pk];
+  if (!profile.ibkrAccountId) return null;
+  const baseUrl = profile.ibkrGatewayUrl || 'https://localhost:5000';
+  try {
+    const resp = await fetch(baseUrl + '/v1/api/portfolio/' + profile.ibkrAccountId + '/positions/0');
+    return await resp.json();
+  } catch(e) { return null; }
+}
+
+async function ibkrGetSummary(pk) {
+  const profile = profiles[pk];
+  if (!profile.ibkrAccountId) return null;
+  const baseUrl = profile.ibkrGatewayUrl || 'https://localhost:5000';
+  try {
+    const resp = await fetch(baseUrl + '/v1/api/portfolio/' + profile.ibkrAccountId + '/summary');
+    return await resp.json();
+  } catch(e) { return null; }
+}
+
+async function ibkrTickle(pk) {
+  const profile = profiles[pk];
+  const baseUrl = profile.ibkrGatewayUrl || 'https://localhost:5000';
+  try {
+    await fetch(baseUrl + '/v1/api/tickle', {method:'POST'});
+  } catch(e) {}
+}
+
+async function ibkrConnect(pk) {
+  showToast('Connecting to IBKR Gateway...');
+  const profile = profiles[pk];
+
+  // Step 1: Check auth
+  const auth = await ibkrCheckAuth(pk);
+  if (!auth) {
+    showToast('Cannot reach IBKR Gateway. Ensure it is running on ' + (profile.ibkrGatewayUrl || 'https://localhost:5000'));
+    return false;
+  }
+  if (!auth.authenticated) {
+    showToast('Not authenticated. Log in to the IBKR Gateway web UI first.');
+    return false;
+  }
+
+  // Step 2: Get accounts
+  const accounts = await ibkrGetAccounts(pk);
+  if (!accounts || accounts.length === 0) {
+    showToast('No accounts found on this IBKR session.');
+    return false;
+  }
+
+  // Use first account (or let user pick if multiple)
+  if (accounts.length === 1) {
+    profile.ibkrAccountId = accounts[0].id || accounts[0].accountId;
+  } else {
+    // Show account selection
+    const acctList = accounts.map((a,i) => `${i+1}. ${a.id} - ${a.accountTitle || a.displayName || ''}`).join('\n');
+    const choice = prompt('Multiple accounts found. Enter number:\n' + acctList);
+    const idx = parseInt(choice) - 1;
+    if (idx >= 0 && idx < accounts.length) {
+      profile.ibkrAccountId = accounts[idx].id || accounts[idx].accountId;
+    } else {
+      showToast('Invalid selection');
+      return false;
+    }
+  }
+
+  profile.ibkrConnected = true;
+  saveProfiles(profiles);
+
+  // Step 3: Sync positions and balance
+  await ibkrSync(pk);
+  showToast('Connected to IBKR: ' + profile.ibkrAccountId);
+  return true;
+}
+
+async function ibkrDisconnect(pk) {
+  const profile = profiles[pk];
+  profile.ibkrConnected = false;
+  profile.ibkrAccountId = null;
+  profile.ibkrPositions = [];
+  profile.ibkrBalance = null;
+  saveProfiles(profiles);
+  showToast('Disconnected from IBKR');
+  if (state.activeScreen === 'portfolio') renderPortfolio();
+}
+
+async function ibkrSync(pk) {
+  const profile = profiles[pk];
+  if (!profile.ibkrConnected || !profile.ibkrAccountId) return;
+
+  // Fetch positions
+  const positions = await ibkrGetPositions(pk);
+  if (positions && Array.isArray(positions)) {
+    profile.ibkrPositions = positions.map(pos => ({
+      conid: pos.conid,
+      ticker: pos.contractDesc || pos.ticker || pos.symbol || ('CONID:' + pos.conid),
+      name: pos.name || pos.contractDesc || '',
+      shares: pos.position || 0,
+      avgCost: pos.avgCost || 0,
+      mktPrice: pos.mktPrice || 0,
+      mktValue: pos.mktValue || 0,
+      unrealizedPnl: pos.unrealizedPnl || 0,
+      realizedPnl: pos.realizedPnl || 0,
+      currency: pos.currency || 'USD',
+      assetClass: pos.assetClass || pos.secType || 'STK'
+    })).filter(p => p.shares !== 0); // Only show active positions
+  }
+
+  // Fetch account summary
+  const summary = await ibkrGetSummary(pk);
+  if (summary) {
+    profile.ibkrBalance = {
+      netliquidation: summary.netliquidation?.amount || summary.netliquidation?.value || 0,
+      totalcashvalue: summary.totalcashvalue?.amount || summary.totalcashvalue?.value || 0,
+      grosspositionvalue: summary.grosspositionvalue?.amount || summary.grosspositionvalue?.value || 0,
+      availablefunds: summary.availablefunds?.amount || summary.availablefunds?.value || 0,
+      buyingpower: summary.buyingpower?.amount || summary.buyingpower?.value || 0
+    };
+  }
+
+  saveProfiles(profiles);
+  if (state.activeScreen === 'portfolio') renderPortfolio();
+}
+
+async function ibkrSyncAllConnected() {
+  for (const name of PROFILES) {
+    const pk = name.toLowerCase();
+    if (profiles[pk].ibkrConnected) {
+      await ibkrTickle(pk);
+      await ibkrSync(pk);
+    }
+  }
+}
+
+function ibkrUpdateGatewayUrl(pk) {
+  const input = document.getElementById('ibkrUrl');
+  if (input) {
+    profiles[pk].ibkrGatewayUrl = input.value.replace(/\/+$/, '');
+    saveProfiles(profiles);
+    showToast('Gateway URL updated');
+  }
+}
+
+// ─── R-TARGET NOTIFICATIONS ───
+function checkRTargets() {
+  // Check all open trades across all profiles for R-multiple target hits
+  PROFILES.forEach(profileName => {
+    const pk = profileName.toLowerCase();
+    const trades = profiles[pk].trades || [];
+    let changed = false;
+
+    trades.forEach(trade => {
+      const d = state.tickerData[trade.ticker];
+      if (!d || !d.price) return;
+
+      const currentPrice = d.price;
+      const stopDist = trade.entryPrice - trade.stopPrice; // per-share risk
+      if (stopDist <= 0) return;
+
+      const rMultiple = (currentPrice - trade.entryPrice) / stopDist;
+      const currentR = Math.floor(rMultiple); // integer R level reached
+
+      // Initialize notified levels if not present
+      if (!trade.notifiedRLevels) {
+        trade.notifiedRLevels = [];
+        changed = true;
+      }
+
+      // Check R levels 2 through 20
+      for (let r = 2; r <= 20; r++) {
+        if (rMultiple >= r && !trade.notifiedRLevels.includes(r)) {
+          // New R-target hit!
+          trade.notifiedRLevels.push(r);
+          changed = true;
+
+          const dollarProfit = (currentPrice - trade.entryPrice) * trade.totalShares;
+          const emoji = r >= 10 ? '🏆' : r >= 5 ? '🔥' : '🎯';
+
+          // Audio alert
+          playAlertSound('cross');
+
+          // Browser notification
+          if (Notification.permission === 'granted') {
+            const n = new Notification(`${r}R Target Hit: ${trade.ticker}`, {
+              body: `${profileName}'s ${trade.ticker} position reached ${r}R!\nPrice: $${currentPrice.toFixed(2)} | P&L: +$${dollarProfit.toFixed(2)}`,
+              icon: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="#26a69a"/><text x="32" y="44" text-anchor="middle" font-size="24" fill="#fff" font-weight="bold">' + r + 'R</text></svg>'),
+              tag: `rtarget-${trade.id}-${r}`,
+              requireInteraction: false
+            });
+            n.onclick = () => { window.focus(); navigateTo('portfolio'); n.close(); };
+          }
+
+          // Visual alert banner
+          currentAlertTicker = trade.ticker;
+          showAlertBanner(
+            `<strong>${emoji} ${r}R TARGET: ${trade.ticker}</strong> &mdash; ${profileName}'s position hit ${r}R at $${currentPrice.toFixed(2)}. Unrealized P&L: +$${dollarProfit.toFixed(2)}`
+          );
+        }
+      }
+    });
+
+    if (changed) saveProfiles(profiles);
+  });
+}
+
+// ─── PWA MANIFEST ───
+function setupPWA() {
+  const manifest = {
+    name: 'TrendPulse - Investment Dashboard',
+    short_name: 'TrendPulse',
+    start_url: './',
+    display: 'standalone',
+    background_color: '#f4f6f9',
+    theme_color: '#89b4fa',
+    icons: [{
+      src: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="url(#g)"/><path d="M128 352L192 192L256 288L320 160L384 256" stroke="#fff" stroke-width="32" stroke-linecap="round" stroke-linejoin="round" fill="none"/><defs><linearGradient id="g" x1="0" y1="0" x2="512" y2="512"><stop stop-color="#89b4fa"/><stop offset="1" stop-color="#a6e3a1"/></linearGradient></defs></svg>'),
+      sizes: 'any',
+      type: 'image/svg+xml'
+    }]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
+  const link = document.createElement('link');
+  link.rel = 'manifest';
+  link.href = URL.createObjectURL(blob);
+  document.head.appendChild(link);
+}
+
+// ─── WINDOW RESIZE ───
+function handleResize() {
+  if (chartEngine && state.activeScreen === 'chart') {
+    chartEngine.draw();
+  }
+}
+
+// ─── INIT ───
+async function init() {
+  setupPWA();
+  applyTheme();
+  loadCachedScreener();
+  initNotifications();
+  renderNav();
+  renderScreen();
+
+  // Theme toggle
+  document.getElementById('themeBtn').onclick = () => {
+    state.darkMode = !state.darkMode;
+    applyTheme();
+    if (chartEngine && state.activeScreen === 'chart') chartEngine.draw();
+  };
+
+  // Refresh button
+  document.getElementById('refreshBtn').onclick = () => {
+    refreshAllTickers();
+  };
+
+  // Window resize
+  window.addEventListener('resize', handleResize);
+
+  // Load initial data
+  await refreshAllTickers();
+
+  // Auto-refresh every 10 minutes (includes IBKR sync)
+  setInterval(() => {
+    if (isMarketOpen()) {
+      refreshAllTickers();
+      ibkrSyncAllConnected();
+    }
+  }, 600000);
+
+  // IBKR keep-alive every 5 minutes
+  setInterval(() => {
+    PROFILES.forEach(name => {
+      const pk = name.toLowerCase();
+      if (profiles[pk].ibkrConnected) ibkrTickle(pk);
+    });
+  }, 300000);
+
+  // Update market status every minute
+  setInterval(() => {
+    const open = isMarketOpen();
+    document.getElementById('marketDot').className = 'market-dot ' + (open?'open':'closed');
+    document.getElementById('marketStatus').textContent = open ? 'Market Open' : 'Market Closed';
+  }, 60000);
+}
+
+// Make functions globally accessible
+window.navigateTo = navigateTo;
+window.switchProfile = switchProfile;
+window.runScreener = runScreener;
+window.addCustomTicker = addCustomTicker;
+window.removeCustomTicker = removeCustomTicker;
+window.openCalcFromChart = openCalcFromChart;
+window.openChecklistFromChart = openChecklistFromChart;
+window.updateCalc = updateCalc;
+window.confirmTrade = confirmTrade;
+window.addPyramidLayer = addPyramidLayer;
+window.tightenStop = tightenStop;
+window.exitTrade = exitTrade;
+window.toggleChecklistItem = toggleChecklistItem;
+window.resetChecklist = resetChecklist;
+window.sortJournal = sortJournal;
+window.addManualJournalEntry = addManualJournalEntry;
+window.exportJournalCSV = exportJournalCSV;
+window.lookupCalcTicker = lookupCalcTicker;
+window.toggleNotifications = toggleNotifications;
+window.dismissAlert = dismissAlert;
+window.viewAlertTicker = viewAlertTicker;
+window.ibkrSaveAndConnect = async function() {
+  const pk = getProfileKey();
+  const input = document.getElementById('ibkrUrl');
+  if (input) profiles[pk].ibkrGatewayUrl = input.value.replace(/\/+$/, '');
+  saveProfiles(profiles);
+  const ok = await ibkrConnect(pk);
+  if (ok) renderPortfolio();
+};
+window.ibkrDisconnectCurrent = function() {
+  ibkrDisconnect(getProfileKey());
+};
+window.ibkrSyncCurrent = async function() {
+  showToast('Syncing IBKR positions...');
+  await ibkrSync(getProfileKey());
+  showToast('IBKR sync complete');
+};
+
+init();
+</script>
+</body>
+</html>
