@@ -1345,7 +1345,7 @@ function renderDashboard() {
   const isLoading = loadedCount < totalCount;
   const longCount = tickerDataArr.filter(d => d.signal === 'LONG').length;
   const shortCount = tickerDataArr.filter(d => d.signal === 'SHORT').length;
-  const newCrossCount = tickerDataArr.filter(d => d.isNewCross).length;
+  const newCrossCount = tickerDataArr.filter(d => d.isNewCross).length + state.screenerResults.filter(r => r.trendDays === 0).length;
 
   // Calculate total open risk
   const pk = getProfileKey();
@@ -1457,12 +1457,13 @@ function renderScreenerTable() {
   let rows = '';
   state.screenerResults.forEach(r => {
     const sigClass = r.trendDir === 'LONG' ? 'long' : r.trendDir === 'SHORT' ? 'short' : 'neutral';
-    rows += `<tr onclick="navigateTo('chart',{ticker:'${r.ticker}'})">
-      <td style="font-weight:800;font-family:var(--mono)">${r.ticker}</td>
+    const isNew = r.trendDays === 0;
+    rows += `<tr onclick="navigateTo('chart',{ticker:'${r.ticker}'})" style="${isNew ? 'background:rgba(249,226,175,0.08);' : ''}">
+      <td style="font-weight:800;font-family:var(--mono)">${r.ticker}${isNew ? ' <span style="background:linear-gradient(135deg,#fab387,#f9e2af);color:#1e1e2e;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:800">NEW</span>' : ''}</td>
       <td style="font-family:var(--mono)">$${fmt(r.price)}</td>
       <td style="font-family:var(--mono);color:#40a02b">+${r.perf6m.toFixed(1)}%</td>
       <td><span class="signal-badge ${sigClass}">${r.trendDir || '--'}</span></td>
-      <td style="font-size:12px;color:var(--text3)">${r.trendDays != null ? r.trendDays + 'd' : '--'}</td>
+      <td style="font-size:12px;color:${isNew ? '#df8e1d' : 'var(--text3)'};${isNew ? 'font-weight:700' : ''}">${r.trendDays != null ? r.trendDays + 'd' : '--'}</td>
     </tr>`;
   });
   return `<div class="screener-table-wrap"><table class="screener-table">
