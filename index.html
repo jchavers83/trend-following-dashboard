@@ -1345,10 +1345,11 @@ function renderDashboard() {
   const isLoading = loadedCount < totalCount;
   const longCount = tickerDataArr.filter(d => d.signal === 'LONG').length;
   const shortCount = tickerDataArr.filter(d => d.signal === 'SHORT').length;
-  // Count new crosses - avoid double-counting tickers in both core and screener
-  const coreCrossSymbols = new Set(tickerDataArr.filter(d => d.isNewCross).map(d => d.ticker));
-  const screenerNewCrosses = state.screenerResults.filter(r => r.trendDays === 0 && !coreCrossSymbols.has(r.ticker));
-  const newCrossCount = coreCrossSymbols.size + screenerNewCrosses.length;
+  // Count new crosses from what's actually visible on page (no double-counting)
+  const coreAndCustom = [...PERMANENT_TICKERS, ...state.customTickers];
+  const coreCrossCount = coreAndCustom.filter(t => state.tickerData[t] && state.tickerData[t].isNewCross).length;
+  const screenerCrossCount = state.screenerResults.filter(r => r.trendDays === 0 && !coreAndCustom.includes(r.ticker)).length;
+  const newCrossCount = coreCrossCount + screenerCrossCount;
 
   // Calculate total open risk
   const pk = getProfileKey();
