@@ -318,6 +318,29 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;
 .notif-dot{width:6px;height:6px;background:#f38ba8;border-radius:50%;position:absolute;top:6px;right:6px;display:none}
 .notif-dot.show{display:block;animation:pulse 2s ease-in-out infinite}
 
+/* Heat Gauge */
+.heat-gauge{padding:10px 14px 12px;border-bottom:1px solid var(--card-border)}
+.heat-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;font-size:10px;color:var(--text3)}
+.heat-meta .heat-label{text-transform:uppercase;letter-spacing:1.1px;font-weight:600}
+.heat-meta .heat-val{font-family:var(--mono);font-weight:700;font-size:11px}
+.heat-track{height:5px;background:var(--bg2);border-radius:3px;overflow:hidden}
+.heat-fill{height:100%;border-radius:3px;transition:width 0.4s ease,background 0.4s ease}
+
+/* Signal count badge on nav */
+.nav-signal-badge{display:inline-flex;gap:4px;margin-left:auto;font-size:10px;font-family:var(--mono);font-weight:700}
+.nav-signal-badge .badge-long{color:#40a02b}
+.nav-signal-badge .badge-short{color:#d20f39}
+
+/* Bot status in footer */
+.sidebar-footer-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.bot-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;flex-shrink:0}
+.bot-dot.active{background:#26a69a}
+.bot-dot.offline{background:var(--text3)}
+.bot-status-text{font-size:10px;color:var(--text3)}
+
+/* Equity sparkline card */
+.equity-sparkline-card{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px}
+
 /* Responsive */
 @media(max-width:768px){
   .sidebar{display:none}
@@ -394,11 +417,14 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;
       <label>Trader Profile</label>
       <div class="profile-btns" id="sidebarProfiles"></div>
     </div>
+    <div id="heatGaugeContainer"></div>
     <div class="sidebar-section-label">Navigation</div>
     <div class="sidebar-nav" id="sidebarNav"></div>
     <div class="sidebar-footer">
-      <span class="market-dot" id="marketDot"></span>
-      <span id="marketStatus">Market Closed</span>
+      <div class="sidebar-footer-row">
+        <div><span class="market-dot" id="marketDot"></span><span id="marketStatus">Market Closed</span></div>
+        <div id="botStatusWidget" class="bot-status-text"></div>
+      </div>
     </div>
   </nav>
 
@@ -464,7 +490,8 @@ const SCREENS = [
   {id:'chart',label:'Chart',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>'},
   {id:'calculator',label:'Size Calc',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="14" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/></svg>'},
   {id:'portfolio',label:'Portfolio',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>'},
-{id:'journal',label:'Journal',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>'}
+{id:'journal',label:'Journal',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>'},
+{id:'settings',label:'Settings',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'}
 ];
 
 const CHECKLIST_ITEMS = [
@@ -1625,12 +1652,62 @@ class ChartEngine {
 }
 
 // ─── UI RENDERING ───
+
+function renderHeatGauge() {
+  const container = document.getElementById('heatGaugeContainer');
+  if (!container) return;
+  const pk = getProfileKey();
+  const trades = (profiles[pk].trades || []).filter(t => !t.closed);
+  const equity = profiles[pk].accountEquity || 100000;
+  const maxHeat = profiles[pk].maxPortfolioHeat || 10;
+
+  let totalRisk = 0;
+  trades.forEach(t => {
+    const riskPerShare = (t.entryPrice || 0) - (t.stopPrice || 0);
+    totalRisk += riskPerShare * (t.totalShares || 0);
+  });
+  const heatPct = equity > 0 ? (totalRisk / equity) * 100 : 0;
+  const fillPct = Math.min((heatPct / maxHeat) * 100, 100);
+
+  let fillColor = '#26a69a'; // green
+  if (fillPct >= 85) fillColor = '#ef5350'; // red
+  else if (fillPct >= 60) fillColor = '#fab387'; // amber
+
+  container.innerHTML = `<div class="heat-gauge">
+    <div class="heat-meta">
+      <span class="heat-label">Portfolio Heat</span>
+      <span class="heat-val" style="color:${fillColor}">${heatPct.toFixed(1)}% / ${maxHeat}%</span>
+    </div>
+    <div class="heat-track"><div class="heat-fill" style="width:${fillPct}%;background:${fillColor}"></div></div>
+  </div>`;
+}
+
+function updateBotStatus() {
+  const widget = document.getElementById('botStatusWidget');
+  if (!widget) return;
+  const lastPing = localStorage.getItem('cp_bot_last_ping');
+  const isActive = lastPing && (Date.now() - parseInt(lastPing, 10)) < 300000;
+  widget.innerHTML = `<span class="bot-dot ${isActive ? 'active' : 'offline'}"></span>${isActive ? 'Bot Active' : 'Bot Offline'}`;
+}
+
 function renderNav() {
+  // Compute signal counts for badge
+  let longCount = 0, shortCount = 0;
+  PERMANENT_TICKERS.forEach(t => {
+    const sig = state.tickerData[t]?.signal;
+    if (sig === 'LONG') longCount++;
+    else if (sig === 'SHORT') shortCount++;
+  });
+
   // Sidebar nav
   const sidebarNav = document.getElementById('sidebarNav');
-  sidebarNav.innerHTML = SCREENS.map(s =>
-    `<button class="nav-item${state.activeScreen===s.id?' active':''}" data-screen="${s.id}">${s.icon}<span>${s.label}</span></button>`
-  ).join('');
+  sidebarNav.innerHTML = SCREENS.map(s => {
+    let badge = '';
+    if (s.id === 'dashboard' && (longCount > 0 || shortCount > 0)) {
+      badge = `<span class="nav-signal-badge"><span class="badge-long">▲${longCount}</span><span class="badge-short">▼${shortCount}</span></span>`;
+    }
+    return `<button class="nav-item${state.activeScreen===s.id?' active':''}" data-screen="${s.id}">${s.icon}<span>${s.label}</span>${badge}</button>`;
+  }).join('');
   sidebarNav.querySelectorAll('.nav-item').forEach(btn => {
     btn.onclick = () => navigateTo(btn.dataset.screen);
   });
@@ -1666,6 +1743,12 @@ function renderNav() {
   const open = isMarketOpen();
   document.getElementById('marketDot').className = 'market-dot ' + (open?'open':'closed');
   document.getElementById('marketStatus').textContent = open ? 'Market Open' : 'Market Closed';
+
+  // Heat gauge
+  renderHeatGauge();
+
+  // Bot status
+  updateBotStatus();
 }
 
 function renderRefreshBtn() {
@@ -1698,6 +1781,7 @@ function renderScreen() {
     case 'portfolio': renderPortfolio(); break;
     case 'checklist': renderChecklist(); break;
     case 'journal': renderJournal(); break;
+    case 'settings': renderSettings(); break;
   }
 }
 
@@ -1780,15 +1864,31 @@ function renderSignalTable(tickers) {
     }
     const chClass = d.change >= 0 ? 'up' : 'down';
     const sigClass = d.signal.toLowerCase();
-    rows += `<tr onclick="navigateTo('chart',{ticker:'${ticker}'})">
-      <td class="ticker-cell">${ticker}${d.isNewCross ? ' <span style="background:linear-gradient(135deg,#fab387,#f9e2af);color:#1e1e2e;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:800">NEW</span>' : ''}</td>
+
+    // Cross age urgency
+    const days = d.daysSinceCross;
+    let rowBg = '';
+    let crossCellHtml = days != null ? days + 'd' : '--';
+    let tickerCellStyle = '';
+    if (days === 0) {
+      rowBg = 'background:rgba(249,226,175,0.15);';
+      crossCellHtml = '<strong style="color:#fab387">TODAY</strong>';
+    } else if (days === 1) {
+      rowBg = 'background:rgba(249,226,175,0.06);';
+      crossCellHtml = '<span style="color:#fab387">1d</span>';
+    } else if (days != null && days > 14) {
+      tickerCellStyle = 'color:var(--text3)';
+    }
+
+    rows += `<tr onclick="navigateTo('chart',{ticker:'${ticker}'})" style="${rowBg}">
+      <td class="ticker-cell" style="${tickerCellStyle}">${ticker}${d.isNewCross ? ' <span style="background:linear-gradient(135deg,#fab387,#f9e2af);color:#1e1e2e;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:800">NEW</span>' : ''}</td>
       <td style="color:var(--text3);font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.name || ''}</td>
       <td class="price-cell">$${fmt(d.price)}</td>
       <td class="change-cell ${chClass}">${d.change>=0?'+':''}${fmt(d.change)} (${d.changePct>=0?'+':''}${d.changePct.toFixed(2)}%)</td>
       <td class="ma-cell">${d.ma10!=null?d.ma10.toFixed(2):'--'}</td>
       <td class="ma-cell">${d.ma20!=null?d.ma20.toFixed(2):'--'}</td>
       <td><span class="signal-badge ${sigClass}">${d.signal}</span></td>
-      <td style="font-size:12px;color:var(--text3)">${d.daysSinceCross!=null?d.daysSinceCross+'d':'--'}</td>
+      <td style="font-size:12px;color:var(--text3)">${crossCellHtml}</td>
     </tr>`;
   });
 
@@ -2232,6 +2332,88 @@ function confirmTrade() {
   navigateTo('portfolio');
 }
 
+// ─── EQUITY SPARKLINE ───
+function renderEquityCard(closedTrades) {
+  if (!closedTrades || closedTrades.length < 2) return '';
+  return `<div class="equity-sparkline-card">
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:8px">Equity Curve (Closed Trades)</div>
+    <canvas id="equitySparkline" width="300" height="50" style="width:100%;height:50px;display:block"></canvas>
+  </div>`;
+}
+
+function drawEquitySparkline(closedTrades) {
+  const canvas = document.getElementById('equitySparkline');
+  if (!canvas) return;
+
+  // Sort by exitDate and build cumulative P&L
+  const sorted = [...closedTrades].filter(t => t.exitDate && t.pnl != null)
+    .sort((a, b) => a.exitDate.localeCompare(b.exitDate));
+  if (sorted.length < 2) return;
+
+  const cumPnl = [];
+  let running = 0;
+  sorted.forEach(t => { running += t.pnl; cumPnl.push(running); });
+
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.offsetWidth || 300;
+  const h = 50;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const pad = { top: 6, right: 60, bottom: 6, left: 6 };
+  const plotW = w - pad.left - pad.right;
+  const plotH = h - pad.top - pad.bottom;
+
+  const minVal = Math.min(0, ...cumPnl);
+  const maxVal = Math.max(0, ...cumPnl);
+  const range = maxVal - minVal || 1;
+
+  const finalVal = cumPnl[cumPnl.length - 1];
+  const lineColor = finalVal >= 0 ? '#26a69a' : '#ef5350';
+  const fillColor = finalVal >= 0 ? 'rgba(38,166,154,0.12)' : 'rgba(239,83,80,0.12)';
+
+  function px(i) { return pad.left + (i / (cumPnl.length - 1)) * plotW; }
+  function py(v) { return pad.top + plotH - ((v - minVal) / range) * plotH; }
+
+  // Area fill
+  ctx.beginPath();
+  ctx.moveTo(px(0), py(cumPnl[0]));
+  cumPnl.forEach((v, i) => { if (i > 0) ctx.lineTo(px(i), py(v)); });
+  ctx.lineTo(px(cumPnl.length - 1), py(minVal));
+  ctx.lineTo(px(0), py(minVal));
+  ctx.closePath();
+  ctx.fillStyle = fillColor;
+  ctx.fill();
+
+  // Zero line
+  ctx.beginPath();
+  ctx.moveTo(pad.left, py(0));
+  ctx.lineTo(pad.left + plotW, py(0));
+  ctx.strokeStyle = 'rgba(147,153,178,0.3)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Line
+  ctx.beginPath();
+  ctx.moveTo(px(0), py(cumPnl[0]));
+  cumPnl.forEach((v, i) => { if (i > 0) ctx.lineTo(px(i), py(v)); });
+  ctx.strokeStyle = lineColor;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Label total P&L top-right
+  const sign = finalVal >= 0 ? '+' : '';
+  ctx.font = '11px Inter, system-ui';
+  ctx.fillStyle = lineColor;
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'top';
+  ctx.fillText(sign + '$' + fmt(finalVal), w - 4, 4);
+}
+
 // ─── PORTFOLIO ───
 function renderPortfolio() {
   const content = document.getElementById('content');
@@ -2290,6 +2472,8 @@ function renderPortfolio() {
     </div>`;
   }).join('');
 
+  const closedTrades = profiles[pk].journal || [];
+
   content.innerHTML = `
     <div class="screen active">
       <h2 style="margin-bottom:16px">Portfolio & Pyramid Tracker</h2>
@@ -2302,11 +2486,18 @@ function renderPortfolio() {
         <div class="summary-card"><div class="label">Alerts</div><div class="value amber">${alerts}</div></div>
       </div>
 
+      ${renderEquityCard(closedTrades)}
+
       ${trades.length === 0 && !(profiles[pk].ibkrConnected && profiles[pk].ibkrPositions.length > 0) ? '<div style="text-align:center;padding:40px;color:var(--text3)"><p style="font-size:15px">No open trades</p><p style="margin-top:8px;font-size:13px">Use the Position Size Calculator to enter a new trade, or connect your IBKR account below</p></div>' : tradeCards}
 
       ${renderIBKRSection(pk)}
     </div>
   `;
+
+  // Draw sparkline after DOM is ready
+  if (closedTrades.length >= 2) {
+    drawEquitySparkline(closedTrades);
+  }
 }
 
 function renderIBKRSection(pk) {
@@ -2648,6 +2839,64 @@ function exportJournalCSV() {
   a.click();
   URL.revokeObjectURL(url);
   showToast('CSV exported');
+}
+
+// ─── SETTINGS ───
+function renderSettings() {
+  const content = document.getElementById('content');
+  const pk = getProfileKey();
+  const pf = profiles[pk];
+
+  content.innerHTML = `
+    <div class="screen active">
+      <div class="calc-wrap">
+        <h2 style="margin-bottom:16px">Settings</h2>
+        <div style="font-size:13px;color:var(--text3);margin-bottom:16px">Profile: <strong style="color:var(--text)">${state.activeProfile}</strong></div>
+        <div class="calc-card">
+          <div class="form-group">
+            <label>Account Equity ($)</label>
+            <input type="number" id="settingsEquity" value="${pf.accountEquity || 100000}" placeholder="100000">
+          </div>
+          <div class="form-group">
+            <label>Risk Per Trade (%)</label>
+            <input type="number" id="settingsRiskPct" value="${pf.riskPct || 1.5}" placeholder="1.5" step="0.1">
+          </div>
+          <div class="form-group">
+            <label>ATR Stop Multiplier</label>
+            <input type="number" id="settingsAtrMult" value="${pf.atrMultiplier || 2}" placeholder="2" step="0.5">
+          </div>
+          <div class="form-group">
+            <label>Max Open Positions</label>
+            <input type="number" id="settingsMaxPos" value="${pf.maxOpenPositions || 10}" placeholder="10">
+          </div>
+          <div class="form-group">
+            <label>Max Portfolio Heat (%)</label>
+            <input type="number" id="settingsMaxHeat" value="${pf.maxPortfolioHeat || 10}" placeholder="10" step="1">
+          </div>
+          <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="saveSettings()">Save Settings</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function saveSettings() {
+  const pk = getProfileKey();
+  const equity = parseFloat(document.getElementById('settingsEquity').value);
+  const riskPct = parseFloat(document.getElementById('settingsRiskPct').value);
+  const atrMult = parseFloat(document.getElementById('settingsAtrMult').value);
+  const maxPos = parseInt(document.getElementById('settingsMaxPos').value, 10);
+  const maxHeat = parseFloat(document.getElementById('settingsMaxHeat').value);
+
+  if (!isNaN(equity)) profiles[pk].accountEquity = equity;
+  if (!isNaN(riskPct)) profiles[pk].riskPct = riskPct;
+  if (!isNaN(atrMult)) profiles[pk].atrMultiplier = atrMult;
+  if (!isNaN(maxPos)) profiles[pk].maxOpenPositions = maxPos;
+  if (!isNaN(maxHeat)) profiles[pk].maxPortfolioHeat = maxHeat;
+
+  saveProfiles(profiles);
+  showToast('Settings saved');
+  renderNav(); // updates heat gauge
 }
 
 // ─── UTILS ───
@@ -3137,6 +3386,7 @@ async function init() {
   initNotifications();
   renderNav();
   renderScreen();
+  updateBotStatus();
 
   // Theme toggle
   document.getElementById('themeBtn').onclick = () => {
@@ -3225,6 +3475,8 @@ window.ibkrSyncCurrent = async function() {
   await ibkrSync(getProfileKey());
   showToast('IBKR sync complete');
 };
+window.saveSettings = saveSettings;
+window.toggleChartTheme = toggleChartTheme;
 
 init();
 </script>
