@@ -160,11 +160,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;
 .chart-legend{display:flex;gap:16px;margin-top:10px;font-size:12px}
 .chart-legend .legend-item{display:flex;align-items:center;gap:5px}
 .chart-legend .legend-dot{width:10px;height:3px;border-radius:2px}
-.chart-actions{display:flex;gap:8px;flex-wrap:wrap}
+.chart-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .chart-info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
-.chart-info-card{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius-sm);padding:12px}
-.chart-info-card .label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px}
-.chart-info-card .val{font-size:16px;font-weight:700;font-family:var(--mono);margin-top:2px}
+.chart-info-card{background:var(--card);border:1px solid var(--card-border);border-left:3px solid var(--card-border);border-radius:var(--radius-sm);padding:10px 14px}
+.chart-info-card .label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.6px;font-weight:600}
+.chart-info-card .val{font-size:18px;font-weight:700;font-family:var(--mono);margin-top:3px;line-height:1.1}
 
 /* Buttons */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all var(--transition);font-family:var(--sans)}
@@ -1129,11 +1129,12 @@ class ChartEngine {
     ctx.scale(dpr, dpr);
 
     const w = rect.width, h = rect.height;
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    const bgColor = isDark ? '#1e1e2e' : '#ffffff';
-    const gridColor = isDark ? 'rgba(108,112,134,0.15)' : 'rgba(147,153,178,0.12)';
-    const textColor = isDark ? '#a6adc8' : '#9399b2';
-    const priceColor = isDark ? '#cdd6f4' : '#1e1e2e';
+    // Chart canvas is always dark — colors pop, washes out on white
+    const bgColor    = '#131722';
+    const gridColor  = 'rgba(255,255,255,0.04)';
+    const textColor  = 'rgba(148,158,178,0.7)';
+    const priceColor = '#c9d1d9';
+    const isDark     = true; // always dark inside canvas
 
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, w, h);
@@ -1154,6 +1155,10 @@ class ChartEngine {
     const vs = this.viewStart, ve = this.viewEnd;
     const visibleBars = ve - vs;
 
+    // Reserve bottom 18% for volume bars, 6px gap
+    const volAreaH   = Math.floor(plotH * 0.18);
+    const priceAreaH = plotH - volAreaH - 6;
+
     // Find price range for visible portion only
     let minP = Infinity, maxP = -Infinity;
     const {opens: dOpens, highs: dHighs, lows: dLows} = this.data;
@@ -1170,9 +1175,9 @@ class ChartEngine {
     maxP += range * 0.05;
     const priceRange = maxP - minP;
 
-    // Map data index to x position within the visible window
+    // Map data index → canvas coordinates
     const toX = i => plotX + ((i - vs) / (visibleBars - 1)) * plotW;
-    const toY = p => plotY + (1 - (p - minP) / priceRange) * plotH;
+    const toY = p => plotY + (1 - (p - minP) / priceRange) * priceAreaH;
 
     // Grid lines
     ctx.strokeStyle = gridColor;
@@ -1207,10 +1212,11 @@ class ChartEngine {
     const candleW = Math.max(2, Math.min(rawCandleW, 14));
     const wickW = Math.max(1, candleW > 6 ? 1.5 : 1);
     const candleR = candleW > 5 ? 1.5 : 0; // rounded corners when wide enough
-    const bullColor = isDark ? '#26a69a' : '#26a69a';
-    const bearColor = isDark ? '#ef5350' : '#ef5350';
-    const bullFill = isDark ? 'rgba(38,166,154,0.2)' : 'rgba(38,166,154,0.15)';
-    const dojiColor = isDark ? '#a6adc8' : '#585b70';
+    const bullColor = '#26c6b0';
+    const bearColor = '#ef5350';
+    const bullFill  = 'rgba(38,198,176,0.25)';
+    const bearFill  = 'rgba(239,83,80,0.85)';
+    const dojiColor = 'rgba(160,170,190,0.5)';
     let started = false;
 
     if (opens && highs && lows) {
@@ -1233,7 +1239,7 @@ class ChartEngine {
         const bodyTop = toY(Math.max(o, c));
         const bodyBot = toY(Math.min(o, c));
         const bodyH = Math.max(1, bodyBot - bodyTop);
-        ctx.fillStyle = isBull ? bullFill : bearColor;
+        ctx.fillStyle = isBull ? bullFill : bearFill;
         if (candleR > 0 && bodyH > 3) {
           ctx.beginPath();
           ctx.roundRect(x - candleW/2, bodyTop, candleW, bodyH, candleR);
@@ -1261,11 +1267,31 @@ class ChartEngine {
       ctx.stroke();
     }
 
+    // ── Volume histogram ────────────────────────────────────────
+    const vols = this.data.volumes;
+    if (vols && vols.length > 0) {
+      let maxVol = 0;
+      for (let i = vs; i < ve; i++) if (vols[i]) maxVol = Math.max(maxVol, vols[i]);
+      if (maxVol > 0) {
+        const volBaseY = plotY + plotH;
+        const volMaxH  = volAreaH * 0.9;
+        const {opens, closes: cls} = this.data;
+        for (let i = vs; i < ve; i++) {
+          if (!vols[i]) continue;
+          const x    = toX(i);
+          const barH = (vols[i] / maxVol) * volMaxH;
+          const isBullVol = cls[i] >= (opens ? opens[i] : cls[i]);
+          ctx.fillStyle = isBullVol ? 'rgba(38,198,176,0.2)' : 'rgba(239,83,80,0.2)';
+          ctx.fillRect(x - candleW / 2, volBaseY - barH, candleW, barH);
+        }
+      }
+    }
+
     // MA10 line
     if (ma10Arr) {
       ctx.beginPath();
       ctx.strokeStyle = '#89b4fa';
-      ctx.lineWidth = 1.8;
+      ctx.lineWidth = 2.2;
       started = false;
       for (let i = vs; i < ve; i++) {
         if (ma10Arr[i] == null) continue;
@@ -1279,7 +1305,7 @@ class ChartEngine {
     if (ma20Arr) {
       ctx.beginPath();
       ctx.strokeStyle = '#94e2d5';
-      ctx.lineWidth = 1.8;
+      ctx.lineWidth = 2.2;
       started = false;
       for (let i = vs; i < ve; i++) {
         if (ma20Arr[i] == null) continue;
@@ -1701,11 +1727,11 @@ function renderChartScreen() {
       </div>
 
       <div class="chart-info-grid">
-        <div class="chart-info-card"><div class="label">Signal</div><div class="val"><span class="signal-badge ${d?d.signal.toLowerCase():'neutral'}">${d?d.signal:'--'}</span></div></div>
-        <div class="chart-info-card"><div class="label">MA10</div><div class="val" style="color:#89b4fa">${d&&d.ma10!=null?d.ma10.toFixed(2):'--'}</div></div>
-        <div class="chart-info-card"><div class="label">MA20</div><div class="val" style="color:#f9e2af">${d&&d.ma20!=null?d.ma20.toFixed(2):'--'}</div></div>
-        <div class="chart-info-card"><div class="label">14-Day ATR</div><div class="val">${d&&d.atr!=null?d.atr.toFixed(2):'--'}</div></div>
-        ${trade ? `<div class="chart-info-card"><div class="label">Unrealized P&L (ATR)</div><div class="val" style="color:${(d.price-trade.entryPrice)>=0?'#40a02b':'#d20f39'}">${d?((d.price-trade.entryPrice)/(trade.atr||1)).toFixed(2):'--'}x ATR</div></div>` : ''}
+        <div class="chart-info-card" style="border-left-color:${d&&d.signal==='LONG'?'#26c6b0':d&&d.signal==='SHORT'?'#ef5350':'#585b70'}"><div class="label">Signal</div><div class="val"><span class="signal-badge ${d?d.signal.toLowerCase():'neutral'}">${d?d.signal:'--'}</span></div></div>
+        <div class="chart-info-card" style="border-left-color:#89b4fa"><div class="label">MA10</div><div class="val" style="color:#89b4fa">${d&&d.ma10!=null?d.ma10.toFixed(2):'--'}</div></div>
+        <div class="chart-info-card" style="border-left-color:#94e2d5"><div class="label">MA20</div><div class="val" style="color:#94e2d5">${d&&d.ma20!=null?d.ma20.toFixed(2):'--'}</div></div>
+        <div class="chart-info-card" style="border-left-color:#fab387"><div class="label">14-Day ATR</div><div class="val">${d&&d.atr!=null?d.atr.toFixed(2):'--'}</div></div>
+        ${trade ? `<div class="chart-info-card" style="border-left-color:${(d.price-trade.entryPrice)>=0?'#40a02b':'#d20f39'}"><div class="label">Unrealized P&L</div><div class="val" style="color:${(d.price-trade.entryPrice)>=0?'#40a02b':'#d20f39'}">${d?((d.price-trade.entryPrice)/(trade.atr||1)).toFixed(2):'--'}x ATR</div></div>` : ''}
       </div>
 
       <div class="chart-container">
@@ -1714,14 +1740,13 @@ function renderChartScreen() {
           <div class="legend-item"><div class="legend-dot" style="background:#26a69a"></div>Bullish</div>
           <div class="legend-item"><div class="legend-dot" style="background:#ef5350"></div>Bearish</div>
           <div class="legend-item"><div class="legend-dot" style="background:#89b4fa"></div>MA10</div>
-          <div class="legend-item"><div class="legend-dot" style="background:#f9e2af"></div>MA20</div>
-          <div class="legend-item" style="margin-left:auto;color:var(--text3);font-size:11px">Scroll to zoom &middot; Drag to pan</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#94e2d5"></div>MA20</div>
         </div>
       </div>
 
       <div class="chart-actions">
-        <button class="btn btn-primary" onclick="openCalcFromChart('${ticker}')">Enter Trade</button>
-        <button class="btn btn-outline" onclick="openChecklistFromChart('${ticker}')">Pre-Trade Checklist</button>
+        <button class="btn btn-primary" onclick="openCalcFromChart('${ticker}')" style="padding:12px 28px;font-size:14px;font-weight:700;background:linear-gradient(135deg,#89b4fa,#74c7ec);box-shadow:0 2px 12px rgba(137,180,250,0.35)">↗ Enter Trade</button>
+        <button class="btn btn-outline" onclick="openChecklistFromChart('${ticker}')" style="font-size:12px;opacity:0.8">Pre-Trade Checklist</button>
       </div>
     </div>
   `;
@@ -1736,6 +1761,7 @@ function renderChartScreen() {
         highs: d.highs,
         lows: d.lows,
         closes: d.closes,
+        volumes: d.volumes,
         timestamps: d.timestamps,
         ma10Arr: d.ma10Arr,
         ma20Arr: d.ma20Arr,
