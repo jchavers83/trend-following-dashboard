@@ -1771,10 +1771,11 @@ function renderHeatGauge() {
   if (fillPct >= 85) fillColor = '#ef5350'; // red
   else if (fillPct >= 60) fillColor = '#fab387'; // amber
 
+  const heatDesc = fillPct < 30 ? 'Light' : fillPct < 60 ? 'Moderate' : fillPct < 85 ? 'Heavy' : 'Max';
   container.innerHTML = `<div class="heat-gauge">
     <div class="heat-meta">
-      <span class="heat-label">Portfolio Heat</span>
-      <span class="heat-val" style="color:${fillColor}">${heatPct.toFixed(1)}% / ${maxHeat}%</span>
+      <span class="heat-label">Risk Used</span>
+      <span class="heat-val" style="color:${fillColor}">${heatPct.toFixed(1)}% <span style="color:var(--text3);font-weight:400;font-size:9px">of ${maxHeat}% max · ${heatDesc}</span></span>
     </div>
     <div class="heat-track"><div class="heat-fill" style="width:${fillPct}%;background:${fillColor}"></div></div>
   </div>`;
@@ -3302,8 +3303,8 @@ function buildSystemHealth(pk) {
     <li><span class="pk-label">Worst trade</span><span class="pk-val neg">${worstTrade ? worstTrade.ticker + ' ' + worstR.toFixed(2) + 'R / $' + fmt(worstTrade.pnl) : '--'}</span></li>
     <li><span class="pk-label">Best streak</span><span class="pk-val pos">${bestStreak} wins in a row</span></li>
     <li><span class="pk-label">Worst streak</span><span class="pk-val neg">${worstStreak} losses in a row</span></li>
-    <li><span class="pk-label">Avg hold — winners</span><span class="pk-val neutral">${avgHoldWin.toFixed(1)} days</span></li>
-    <li><span class="pk-label">Avg hold — losers</span><span class="pk-val neutral">${avgHoldLoss.toFixed(1)} days</span></li>
+    <li><span class="pk-label">Avg hold — winners</span><span class="pk-val neutral">${Math.round(avgHoldWin)} days</span></li>
+    <li><span class="pk-label">Avg hold — losers</span><span class="pk-val neutral">${Math.round(avgHoldLoss)} days</span></li>
     <li><span class="pk-label">Current open P&amp;L</span><span class="pk-val ${openPnl>=0?'pos':'neg'}">${openSign}$${fmt(Math.abs(openPnl))}</span></li>
   </ul>`;
 }
@@ -3421,7 +3422,7 @@ function renderPortfolio() {
         </div>
       </div>
       <div style="position:relative">
-        <canvas id="canvasEquityCurve" style="width:100%;height:220px;display:block"></canvas>
+        <canvas id="canvasEquityCurve" style="width:100%;height:340px;display:block"></canvas>
         <div id="tooltipEquity" style="display:none;position:absolute;background:var(--card-solid);border:1px solid var(--card-border);border-radius:6px;padding:7px 10px;font-size:12px;pointer-events:none;z-index:10;min-width:100px;box-shadow:var(--shadow2)"></div>
       </div>
     </div>
