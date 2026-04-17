@@ -692,8 +692,41 @@ function fmpCacheSet(key, data) {
   try { localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data })); } catch (_) {}
 }
 
-// Full S&P 500 + Nasdaq 100 + quality growth stocks — same broad universe as TradingView
-const CANSLIM_UNIVERSE = 'AAPL,ABBV,ABT,ACN,ADBE,ADI,ADP,ADSK,AEP,AFL,AIG,AJG,AKAM,ALB,ALGN,ALK,ALL,AMAT,AMD,AME,AMGN,AMP,AMT,AMZN,ANET,ANSS,AON,APD,APH,ARE,AVGO,AWK,AXP,AZO,BA,BAC,BAX,BBY,BDX,BIIB,BK,BKNG,BKR,BLK,BMY,BR,BSX,C,CAT,CB,CBOE,CBRE,CCI,CDNS,CDW,CEG,CF,CHD,CHRW,CHTR,CI,CINF,CL,CLX,CME,CMG,CMI,CMS,CNC,COF,COP,COST,CPRT,CRL,CRM,CSCO,CSX,CTAS,CTRA,CTSH,CVS,CVX,D,DAL,DE,DFS,DG,DGX,DHI,DHR,DIS,DLR,DOV,DOW,DRI,DTE,DUK,DVN,DXCM,EA,ECL,EFX,EIX,EL,EMR,ENPH,EOG,EQIX,EQT,ETN,ETR,EW,EXC,EXPD,EXPE,EXR,F,FANG,FAST,FCX,FDS,FDX,FIS,FISV,FITB,FTNT,FTV,GD,GE,GEHC,GILD,GIS,GLW,GM,GOOG,GOOGL,GPC,GPN,GRMN,GS,GWW,HAL,HBAN,HCA,HD,HOLX,HON,HPE,HPQ,HRL,HSIC,HST,HSY,HUM,HWM,IBM,ICE,IDXX,IFF,INCY,INTC,INTU,IP,IQV,IR,IRM,ISRG,IT,ITW,J,JBHT,JCI,JNJ,JPM,K,KDP,KEY,KEYS,KHC,KIM,KLAC,KMB,KMI,KMX,KO,KR,L,LDOS,LEN,LH,LHX,LIN,LKQ,LLY,LMT,LNC,LOW,LRCX,LUV,LYB,MA,MAR,MAS,MCD,MCHP,MCK,MCO,MDLZ,MDT,MET,META,MGM,MKC,MMC,MMM,MNST,MO,MOH,MPC,MPWR,MRK,MRNA,MRO,MS,MSCI,MSFT,MSI,MTD,MU,NEE,NEM,NFLX,NKE,NOC,NOW,NSC,NTAP,NTRS,NUE,NVDA,NVR,NXPI,ODFL,OKE,OMC,ON,ORCL,ORLY,OTIS,OXY,PANW,PAYC,PAYX,PCAR,PCG,PEP,PFE,PFG,PG,PGR,PH,PHM,PKG,PLD,PM,PNC,PNR,POOL,PPG,PPL,PRU,PSA,PSX,PTC,PWR,PYPL,QCOM,RCL,REGN,RF,RHI,RJF,RL,RMD,ROK,ROL,ROP,ROST,RSG,RTX,SBAC,SBUX,SCHW,SHW,SLB,SNA,SNPS,SO,SPG,SPGI,SRE,STE,STT,STX,STZ,SWK,SYF,SYK,SYY,T,TDG,TDY,TEL,TER,TFC,TGT,TMO,TMUS,TRGP,TRMB,TROW,TRV,TSCO,TSLA,TSN,TT,TXN,TYL,UAL,UHS,ULTA,UNH,UNP,UPS,URI,USB,V,VLO,VMC,VRSK,VRSN,VRTX,VZ,WAB,WAT,WDC,WEC,WFC,WM,WMB,WMT,WTW,XOM,YUM,ZBH,ZBRA,ZTS,ABNB,CRWD,DDOG,ZS,NET,TEAM,WDAY,HUBS,BILL,PCOR,VEEV,SNOW,MDB,TTD,GTLB,SHOP,SQ,AFRM,COIN,APP,AXON,TMDX,KRYS,ELF,ONON,CAVA,DUOL,MNDY,PINS,SNAP,DASH,RBLX,PLTR,ARM,SMCI,ANET,CELH,PODD,IDXX,ALGN,RCL,CCL,NCLH,DKNG,BKNG,MELI,NU,SE,CPNG,WIX,RDDT,HOOD,SOFI,UPST,RXRX,SOUN,ACHR,ASTS,LULU,DECK,HLT,MAR,EXPE,RIVN,LCID,JOBY,TSM,ASML,ADEA,WWD,AUPH,VIK,SLDE,WDC,TER,MU'.split(',').filter((v,i,a)=>a.indexOf(v)===i);
+// Fallback universe — only used if FMP screener is completely unavailable
+const CANSLIM_FALLBACK = 'AAPL,ABBV,ABT,ACN,ADBE,ADI,ADP,ADSK,AEP,AFL,AIG,AJG,AKAM,ALB,ALGN,ALK,ALL,AMAT,AMD,AME,AMGN,AMP,AMT,AMZN,ANET,ANSS,AON,APD,APH,ARE,AVGO,AWK,AXP,AZO,BA,BAC,BAX,BBY,BDX,BIIB,BK,BKNG,BKR,BLK,BMY,BSX,C,CAT,CB,CBOE,CBRE,CCI,CDNS,CDW,CEG,CF,CHD,CHTR,CI,CINF,CL,CME,CMG,CMI,CMS,CNC,COF,COP,COST,CPRT,CRL,CRM,CSCO,CSX,CTAS,CTRA,CTSH,CVS,CVX,D,DAL,DE,DFS,DG,DGX,DHI,DHR,DIS,DLR,DOV,DOW,DRI,DTE,DUK,DVN,DXCM,EA,ECL,EFX,EIX,EL,EMR,ENPH,EOG,EQIX,EQT,ETN,ETR,EW,EXC,EXPD,EXPE,EXR,F,FANG,FAST,FCX,FDS,FDX,FIS,FISV,FITB,FTNT,FTV,GD,GE,GEHC,GILD,GIS,GLW,GM,GOOG,GOOGL,GPN,GRMN,GS,GWW,HAL,HBAN,HCA,HD,HOLX,HON,HPE,HUM,HWM,IBM,ICE,IDXX,IFF,INCY,INTC,INTU,IQV,IR,IRM,ISRG,IT,ITW,JCI,JNJ,JPM,KDP,KEY,KEYS,KHC,KLAC,KMB,KMI,KO,KR,LDOS,LEN,LH,LHX,LIN,LLY,LMT,LOW,LRCX,LUV,LYB,MA,MAR,MAS,MCD,MCHP,MCK,MCO,MDLZ,MDT,MET,META,MGM,MMC,MMM,MNST,MO,MOH,MPC,MPWR,MRK,MRNA,MRO,MS,MSCI,MSFT,MSI,MTD,MU,NEE,NEM,NFLX,NKE,NOC,NOW,NSC,NTAP,NTRS,NUE,NVDA,NVR,NXPI,ODFL,OKE,OMC,ON,ORCL,ORLY,OTIS,OXY,PANW,PAYC,PAYX,PCAR,PEP,PFE,PG,PGR,PH,PHM,PLD,PM,PNC,PPG,PRU,PSA,PSX,PTC,PWR,PYPL,QCOM,RCL,REGN,RF,RHI,RMD,ROK,ROP,ROST,RSG,RTX,SBAC,SBUX,SCHW,SHW,SLB,SNA,SNPS,SO,SPG,SPGI,SRE,STE,STT,STX,STZ,SWK,SYF,SYK,SYY,T,TDG,TDY,TEL,TER,TFC,TGT,TMO,TMUS,TRGP,TRMB,TROW,TRV,TSCO,TSLA,TSN,TT,TXN,TYL,UAL,UHS,ULTA,UNH,UNP,UPS,URI,USB,V,VLO,VMC,VRSK,VRSN,VRTX,VZ,WAB,WAT,WDC,WEC,WFC,WM,WMB,WMT,WTW,XOM,YUM,ZBH,ZBRA,ZTS,ABNB,CRWD,DDOG,ZS,NET,TEAM,WDAY,HUBS,BILL,PCOR,VEEV,SNOW,MDB,TTD,GTLB,SHOP,SQ,AFRM,COIN,APP,AXON,TMDX,KRYS,ELF,ONON,CAVA,DUOL,MNDY,PINS,SNAP,DASH,RBLX,PLTR,ARM,SMCI,ANET,CELH,PODD,IDXX,ALGN,DKNG,BKNG,MELI,NU,SE,CPNG,WIX,RDDT,SOFI,UPST,LULU,DECK,HLT,MAR,EXPE,TSM,ASML,ADEA,WWD,AUPH,VIK,SLDE'.split(',');
+
+async function fetchFMPCandidates() {
+  const cached = fmpCacheGet('tp_fmp_candidates', 3600000); // 1h — catches new entrants
+  if (cached) { console.log(`[FMP] Cached universe: ${cached.length} stocks`); return cached; }
+
+  // FMP screener: intentionally broad — market cap >$300M, volume >100K, price >$5
+  // Real CANSLIM filters (EPS, revenue growth, MA, volume) applied in later phases.
+  // Trying two endpoints since stable vs v3 availability varies by account tier.
+  const endpoints = [
+    `https://financialmodelingprep.com/stable/screener/stock?marketCapMoreThan=300000000&volumeMoreThan=100000&priceMoreThan=5&limit=1000&apikey=${FMP_KEY}`,
+    `https://financialmodelingprep.com/api/v3/stock-screener?marketCapMoreThan=300000000&volumeMoreThan=100000&priceMoreThan=5&limit=1000&apikey=${FMP_KEY}`,
+  ];
+
+  for (const url of endpoints) {
+    try {
+      const resp = await fetch(url);
+      const data = await resp.json();
+      if (Array.isArray(data) && data.length > 10) {
+        // US exchange symbols only: 1–5 uppercase letters, no dots or hyphens
+        const tickers = data.map(s => s.symbol || s.Symbol || '').filter(s => /^[A-Z]{1,5}$/.test(s));
+        console.log(`[FMP] Screener → ${tickers.length} US stocks`);
+        fmpCacheSet('tp_fmp_candidates', tickers);
+        return tickers;
+      }
+      console.warn('[FMP] Unexpected screener response:', JSON.stringify(data).slice(0, 150));
+    } catch (e) {
+      console.warn('[FMP] Screener endpoint failed:', e.message);
+    }
+  }
+
+  console.warn('[FMP] All screener endpoints failed — using fallback universe');
+  return CANSLIM_FALLBACK;
+}
 
 async function fetchFMPGrowth(ticker) {
   const cacheKey = `tp_fmp_g_${ticker}`;
@@ -773,8 +806,10 @@ async function runScreener() {
   state.screenerProgress = 0;
   if (state.activeScreen === 'dashboard') renderDashboard();
 
-  // ── Phase 1: Universe (S&P 500 + Nasdaq + growth stocks) ──
-  const candidates = CANSLIM_UNIVERSE;
+  // ── Phase 1: Get candidate universe (FMP screener → whole market, or fallback) ──
+  showToast('Building candidate universe...');
+  const candidates = await fetchFMPCandidates();
+  console.log(`[Screener] Scanning ${candidates.length} stocks`);
 
   // ── Phase 2: Yahoo MA signal + price data for all candidates ──
   const cache = loadScreenCache();
