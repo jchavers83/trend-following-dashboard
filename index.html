@@ -692,22 +692,32 @@ function fmpCacheSet(key, data) {
   try { localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data })); } catch (_) {}
 }
 
+// Curated growth stock universe — used as fallback if FMP screener is unavailable
+const GROWTH_UNIVERSE = 'NVDA,META,AMZN,MSFT,GOOGL,AAPL,AVGO,NOW,CRM,ADBE,INTU,ISRG,PANW,CRWD,DDOG,ZS,FTNT,SNOW,MDB,TTD,BILL,HUBS,NET,TEAM,WDAY,SPLK,OKTA,ESTC,ZI,GTLB,CELH,ENPH,FSLR,SEDG,GNRC,PAYC,PCOR,VEEV,IDXX,ALGN,DXCM,PODD,MTCH,PINS,SNAP,ABNB,DASH,COIN,HOOD,RBLX,RIVN,LCID,AFRM,SOFI,UPST,OPEN,LMND,ROOT,PTON,ZM,DOCU,TWLO,U,FIVN,RNG,NICE,BAND,WIX,SHOP,SQ,PYPL,ANET,SMCI,PLTR,ARM,CAVA,DUOL,MNDY,RXRX,SOUN,APP,AXON,TMDX,KRYS,ACHR,JOBY,ASTS,RDDT,ASML,TSM,LULU,ULTA,DECK,ELF,ONON,BIRK,HLT,MAR,H,EXPE,BKNG,UAL,DAL,LUV,RCL,CCL,NCLH,DKNG,MGM,LVS,WYNN,PENN,CPNG,MELI,SE,NU,GRAB,BIDU,JD,PDD,BABA'.split(',');
+
 async function fetchFMPCandidates() {
   const cached = fmpCacheGet('tp_fmp_candidates', 86400000);
   if (cached) return cached;
-  const url = `https://financialmodelingprep.com/api/v3/stock-screener?marketCapMoreThan=1000000000&volumeMoreThan=500000&priceMoreThan=10&country=US&isEtf=false&exchange=NYSE,NASDAQ&limit=250&apikey=${FMP_KEY}`;
+
+  // Try FMP screener — basic params only (country/exchange filters are premium)
+  const url = `https://financialmodelingprep.com/api/v3/stock-screener?marketCapMoreThan=1000000000&volumeMoreThan=300000&priceMoreThan=10&isEtf=false&limit=250&apikey=${FMP_KEY}`;
   try {
     const resp = await fetch(url);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
-    if (!Array.isArray(data)) throw new Error('Unexpected response format');
-    const tickers = data.map(s => s.symbol).filter(s => s && !s.includes('.'));
-    fmpCacheSet('tp_fmp_candidates', tickers);
-    return tickers;
+    if (Array.isArray(data) && data.length > 0) {
+      const tickers = data.map(s => s.symbol).filter(s => s && !s.includes('.') && !s.includes('-'));
+      console.log(`[FMP] Screener returned ${tickers.length} candidates`);
+      fmpCacheSet('tp_fmp_candidates', tickers);
+      return tickers;
+    }
+    console.warn('[FMP] Screener returned unexpected format, using fallback universe:', data);
   } catch (e) {
-    console.warn('[FMP] Screener fetch failed:', e.message);
-    return null;
+    console.warn('[FMP] Screener fetch failed, using fallback universe:', e.message);
   }
+
+  // Fallback: curated growth/momentum universe
+  fmpCacheSet('tp_fmp_candidates', GROWTH_UNIVERSE);
+  return GROWTH_UNIVERSE;
 }
 
 async function fetchFMPGrowth(ticker) {
