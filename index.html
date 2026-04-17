@@ -374,11 +374,16 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-logo">
       <svg viewBox="0 0 32 32" fill="none">
-        <path d="M3 23L11 13L17 18L29 6" stroke="#89b4fa" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M3 10L11 20L17 15L29 26" stroke="#94e2d5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="17" cy="16.5" r="3" fill="#89b4fa" opacity="0.25"/>
-        <circle cx="17" cy="16.5" r="1.8" fill="#89b4fa"/>
-        <circle cx="17" cy="16.5" r="0.9" fill="#fff"/>
+        <!-- Dark badge background -->
+        <rect width="32" height="32" rx="7" fill="#1a2540"/>
+        <!-- MA10 — blue -->
+        <path d="M4 22L11 13L17 18L28 7" stroke="#89b4fa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <!-- MA20 — teal -->
+        <path d="M4 11L11 20L17 15L28 25" stroke="#94e2d5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <!-- Crossover glow ring -->
+        <circle cx="17" cy="16.5" r="4.5" fill="white" opacity="0.1"/>
+        <!-- Crossover point -->
+        <circle cx="17" cy="16.5" r="2.5" fill="white"/>
       </svg>
       <div class="sidebar-logo-text">
         <span class="brand">CrossPoint</span>
