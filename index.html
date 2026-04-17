@@ -731,17 +731,23 @@ async function fetchFMPCandidates() {
 async function fetchFMPGrowth(ticker) {
   const cacheKey = `tp_fmp_g_${ticker}`;
   const cached = fmpCacheGet(cacheKey, 86400000);
-  if (cached) return cached;
-  const url = `https://financialmodelingprep.com/stable/financial-growth?symbol=${ticker}&period=quarter&limit=1&apikey=${FMP_KEY}`;
+  // Re-fetch if cached result is missing the new ROE/margin fields
+  if (cached && cached.roe !== undefined) return cached;
   try {
-    const resp = await fetch(url);
-    if (!resp.ok) return null;
-    const raw = await resp.json();
-    const latest = Array.isArray(raw) ? raw[0] : raw;
-    if (!latest) return null;
+    const [growthResp, ratiosResp] = await Promise.all([
+      fetch(`https://financialmodelingprep.com/stable/financial-growth?symbol=${ticker}&period=quarter&limit=1&apikey=${FMP_KEY}`),
+      fetch(`https://financialmodelingprep.com/stable/ratios-ttm?symbol=${ticker}&apikey=${FMP_KEY}`)
+    ]);
+    const growthRaw = growthResp.ok ? await growthResp.json() : null;
+    const ratiosRaw = ratiosResp.ok ? await ratiosResp.json() : null;
+    const g = Array.isArray(growthRaw) ? growthRaw[0] : growthRaw;
+    const rat = Array.isArray(ratiosRaw) ? ratiosRaw[0] : ratiosRaw;
+    if (!g && !rat) return null;
     const result = {
-      epsGrowth: latest.epsgrowth ?? latest.epsGrowth ?? null,
-      revenueGrowth: latest.revenueGrowth ?? null,
+      epsGrowth:       g   ? (g.epsgrowth ?? g.epsGrowth ?? null)          : null,
+      revenueGrowth:   g   ? (g.revenueGrowth ?? null)                     : null,
+      roe:             rat ? (rat.returnOnEquityTTM ?? null)                : null,
+      operatingMargin: rat ? (rat.operatingProfitMarginTTM ?? null)        : null,
     };
     fmpCacheSet(cacheKey, result);
     return result;
@@ -829,22 +835,27 @@ async function runScreener() {
   }
   saveScreenCache(cache);
 
-  // Pre-filter: only LONG-trend stocks with sufficient volume + market cap + 6M performance
-  // This cuts the FMP growth API calls way down (only quality uptrends get fundamental check)
+  // Pre-filter: LONG trend + minimum liquidity (volume/mktCap)
+  // Deliberately NOT filtering on 6M perf here — that would eliminate stocks
+  // in recent breakouts or recovering from sector selloffs.
   const longCandidates = candidates.filter(t => {
     const d = cache[t];
     if (!d) return false;
     if (d.trendDir !== 'LONG') return false;
-    if (d.avgVol < 500000) return false;          // Avg volume > 500K (matches TradingView)
-    if (d.marketCap > 0 && d.marketCap < 2e9) return false; // Market cap > $2B
-    if (d.perf6m < 15) return false;              // 6M performance > 15%
+    if (d.avgVol > 0 && d.avgVol < 500000) return false;          // Avg Volume 30D > 500K
+    if (d.marketCap > 0 && d.marketCap < 2e9) return false;       // Market cap > $2B
+    if (d.perf6m < 20) return false;                               // Perf 6M > 20%
     return true;
   });
+  console.log(`[Screener] Pre-filter: ${longCandidates.length} LONG-trend liquid stocks`);
+  showToast(`${longCandidates.length} in LONG uptrend — fetching EPS/revenue growth...`);
 
-  // ── Phase 3: FMP EPS + revenue growth (cap at 100 to stay within 250/day free tier) ──
-  // Sort by most recently crossed first so the freshest signals get checked
-  const toCheck = [...longCandidates].sort((a, b) => (cache[a]?.trendDays||999) - (cache[b]?.trendDays||999)).slice(0, 100);
-  showToast(`Fetching EPS/revenue growth for ${toCheck.length} qualifying stocks...`);
+  // ── Phase 3: FMP EPS + revenue growth (cap at 150 per run) ──
+  // Prioritise most recently crossed so freshest signals get checked first
+  const toCheck = [...longCandidates]
+    .sort((a, b) => (cache[a]?.trendDays||999) - (cache[b]?.trendDays||999))
+    .slice(0, 150);
+
   const batchSize2 = 5;
   for (let i = 0; i < toCheck.length; i += batchSize2) {
     const batch = toCheck.slice(i, i + batchSize2);
@@ -854,17 +865,34 @@ async function runScreener() {
     if (i + batchSize2 < toCheck.length) await new Promise(r => setTimeout(r, 200));
   }
 
-  // ── Phase 4: CANSLIM fundamental filters (matched to TradingView thresholds) ──
+  // Log first growth result to help debug field names if needed
+  const sampleTicker = toCheck[0];
+  if (sampleTicker) {
+    const sampleGrowth = fmpCacheGet(`tp_fmp_g_${sampleTicker}`, 86400000);
+    console.log(`[FMP Growth sample] ${sampleTicker}:`, JSON.stringify(sampleGrowth));
+  }
+
+  // Count how many got valid growth data
+  const withGrowth = toCheck.filter(t => {
+    const g = fmpCacheGet(`tp_fmp_g_${t}`, 86400000);
+    return g && (g.epsGrowth != null || g.revenueGrowth != null);
+  });
+  console.log(`[Screener] Growth data received for ${withGrowth.length}/${toCheck.length} stocks`);
+  showToast(`Growth data loaded for ${withGrowth.length} stocks — applying CANSLIM filters...`);
+
+  // ── Phase 4: CANSLIM fundamental filters ──
   const qualified = [];
   for (const ticker of toCheck) {
     const tech = cache[ticker];
     if (!tech) continue;
     const growth = fmpCacheGet(`tp_fmp_g_${ticker}`, 86400000);
-    if (!growth) continue;
-    const { epsGrowth, revenueGrowth } = growth;
-    if (epsGrowth == null || epsGrowth < 0.25) continue;      // C: EPS growth > 25% quarterly YoY
-    if (revenueGrowth == null || revenueGrowth < 0.20) continue; // A: Revenue growth > 20% quarterly YoY
-    qualified.push({ ticker, price: tech.price, trendDir: tech.trendDir, trendDays: tech.trendDays, atr: tech.atr, perf6m: tech.perf6m, epsGrowth, revenueGrowth });
+    if (!growth) { continue; }
+    const { epsGrowth, revenueGrowth, roe, operatingMargin } = growth;
+    if (epsGrowth == null || epsGrowth < 0.50) continue;           // EPS dil growth Qtrly YoY > 50%
+    if (revenueGrowth == null || revenueGrowth < 0.25) continue;   // Revenue growth Qtrly YoY > 25%
+    if (roe == null || roe < 0.17) continue;                       // ROE TTM > 17%
+    if (operatingMargin == null || operatingMargin < 0) continue;  // Operating margin TTM > 0%
+    qualified.push({ ticker, price: tech.price, trendDir: tech.trendDir, trendDays: tech.trendDays, atr: tech.atr, perf6m: tech.perf6m, epsGrowth, revenueGrowth, roe, operatingMargin });
   }
 
   // New crosses first, then ranked by EPS growth
@@ -1548,23 +1576,34 @@ function renderScreenerTable() {
   state.screenerResults.forEach(r => {
     const sigClass = r.trendDir === 'LONG' ? 'long' : r.trendDir === 'SHORT' ? 'short' : 'neutral';
     const isNew = r.trendDays === 0;
-    const epsPct = r.epsGrowth != null ? (r.epsGrowth * 100) : null;
-    const revPct = r.revenueGrowth != null ? (r.revenueGrowth * 100) : null;
-    const epsStr = epsPct != null ? (epsPct >= 0 ? '+' : '') + epsPct.toFixed(0) + '%' : '--';
-    const revStr = revPct != null ? (revPct >= 0 ? '+' : '') + revPct.toFixed(0) + '%' : '--';
-    const epsColor = epsPct >= 50 ? '#40a02b' : epsPct >= 20 ? '#df8e1d' : 'var(--text2)';
-    const revColor = revPct >= 30 ? '#40a02b' : revPct >= 15 ? '#df8e1d' : 'var(--text2)';
+    const epsPct  = r.epsGrowth != null ? (r.epsGrowth * 100) : null;
+    const revPct  = r.revenueGrowth != null ? (r.revenueGrowth * 100) : null;
+    const roePct  = r.roe != null ? (r.roe * 100) : null;
+    const omPct   = r.operatingMargin != null ? (r.operatingMargin * 100) : null;
+    const epsStr  = epsPct != null ? (epsPct >= 0 ? '+' : '') + epsPct.toFixed(0) + '%' : '--';
+    const revStr  = revPct != null ? (revPct >= 0 ? '+' : '') + revPct.toFixed(0) + '%' : '--';
+    const roeStr  = roePct != null ? roePct.toFixed(0) + '%' : '--';
+    const omStr   = omPct  != null ? omPct.toFixed(0)  + '%' : '--';
+    const perf6mStr = r.perf6m != null ? (r.perf6m >= 0 ? '+' : '') + r.perf6m.toFixed(0) + '%' : '--';
+    const epsColor  = epsPct >= 100 ? '#40a02b' : epsPct >= 50 ? '#df8e1d' : 'var(--text2)';
+    const revColor  = revPct >= 50  ? '#40a02b' : revPct >= 25 ? '#df8e1d' : 'var(--text2)';
+    const roeColor  = roePct >= 30  ? '#40a02b' : roePct >= 17 ? '#df8e1d' : 'var(--text2)';
+    const omColor   = omPct  >= 15  ? '#40a02b' : omPct  >= 0  ? '#df8e1d' : 'var(--text2)';
+    const perfColor = r.perf6m >= 40 ? '#40a02b' : r.perf6m >= 20 ? '#df8e1d' : 'var(--text2)';
     rows += `<tr onclick="navigateTo('chart',{ticker:'${r.ticker}'})" style="${isNew ? 'background:rgba(249,226,175,0.08);' : ''}">
       <td style="font-weight:800;font-family:var(--mono)">${r.ticker}${isNew ? ' <span style="background:linear-gradient(135deg,#fab387,#f9e2af);color:#1e1e2e;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:800">NEW</span>' : ''}</td>
       <td style="font-family:var(--mono)">$${fmt(r.price)}</td>
       <td style="font-family:var(--mono);color:${epsColor}">${epsStr}</td>
       <td style="font-family:var(--mono);color:${revColor}">${revStr}</td>
+      <td style="font-family:var(--mono);color:${roeColor}">${roeStr}</td>
+      <td style="font-family:var(--mono);color:${omColor}">${omStr}</td>
+      <td style="font-family:var(--mono);color:${perfColor}">${perf6mStr}</td>
       <td><span class="signal-badge ${sigClass}">${r.trendDir || '--'}</span></td>
       <td style="font-size:12px;color:${isNew ? '#df8e1d' : 'var(--text3)'};${isNew ? 'font-weight:700' : ''}">${r.trendDays != null ? r.trendDays + 'd' : '--'}</td>
     </tr>`;
   });
   return `<div class="screener-table-wrap"><table class="screener-table">
-    <thead><tr><th>Ticker</th><th>Price</th><th>EPS Grw</th><th>Rev Grw</th><th>Signal</th><th>Cross</th></tr></thead>
+    <thead><tr><th>Ticker</th><th>Price</th><th>EPS Grw</th><th>Rev Grw</th><th>ROE</th><th>Op Mrg</th><th>Perf 6M</th><th>Signal</th><th>Cross</th></tr></thead>
     <tbody>${rows}</tbody>
   </table></div>`;
 }
