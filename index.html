@@ -327,9 +327,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;
 .heat-fill{height:100%;border-radius:3px;transition:width 0.4s ease,background 0.4s ease}
 
 /* Signal count badge on nav */
-.nav-signal-badge{display:inline-flex;gap:4px;margin-left:auto;font-size:10px;font-family:var(--mono);font-weight:700}
-.nav-signal-badge .badge-long{color:#40a02b}
-.nav-signal-badge .badge-short{color:#d20f39}
+.nav-signal-badge{display:inline-flex;align-items:center;gap:5px;margin-left:auto;font-size:10px;font-family:var(--mono);font-weight:700;line-height:1}
+.nav-signal-badge .badge-long{color:#40a02b;display:inline-flex;align-items:center;gap:1px}
+.nav-signal-badge .badge-short{color:#d20f39;display:inline-flex;align-items:center;gap:1px}
 
 /* Bot status in footer */
 .sidebar-footer-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -3342,10 +3342,11 @@ function renderPortfolio() {
     const atrGain = currentATR ? (currentPrice - trade.entryPrice) / currentATR : 0;
     const tightenAlert = atrGain >= 5;
 
-    let pyramidHtml = '<table class="pyramid-table"><thead><tr><th>Layer</th><th>Trigger</th><th>Shares</th><th>Status</th></tr></thead><tbody>';
+    let pyramidHtml = '<table class="pyramid-table"><thead><tr><th>#</th><th>Add at Price</th><th>Shares</th><th>Status</th></tr></thead><tbody>';
     trade.pyramidLayers.forEach(layer => {
       const statusClass = layer.status === 'FILLED' ? 'filled' : layer.status === 'NEXT ADD' ? 'next' : 'pending';
-      pyramidHtml += `<tr class="${layer.status==='NEXT ADD'?'next-add':''}"><td>${layer.layer}</td><td style="font-family:var(--mono)">$${layer.triggerPrice.toFixed(2)}</td><td style="font-family:var(--mono)">${layer.shares}</td><td><span class="pyramid-status ${statusClass}">${layer.status}</span></td></tr>`;
+      const statusLabel = layer.status === 'NEXT ADD' ? 'UP NEXT' : layer.status;
+      pyramidHtml += `<tr class="${layer.status==='NEXT ADD'?'next-add':''}"><td>${layer.layer}</td><td style="font-family:var(--mono)">$${layer.triggerPrice.toFixed(2)}</td><td style="font-family:var(--mono)">${layer.shares||'—'}</td><td><span class="pyramid-status ${statusClass}">${statusLabel}</span></td></tr>`;
     });
     pyramidHtml += '</tbody></table>';
 
@@ -3354,20 +3355,17 @@ function renderPortfolio() {
         <div><div class="trade-ticker">${trade.ticker}</div><div class="trade-date">Entered: ${trade.entryDate}</div></div>
         <span class="signal-badge ${pnl>=0?'long':'short'}" style="font-size:13px">${pnl>=0?'+':''}$${fmt(Math.abs(pnl))}</span>
       </div>
-      ${tightenAlert ? '<div class="tighten-alert">TIGHTEN STOP - Unrealized gain exceeds 5x ATR! Move stop to 2x ATR trailing.</div>' : ''}
+      ${tightenAlert ? '<div class="tighten-alert">Move your stop up — this trade is up more than 5x ATR. The bot will handle this automatically if connected.</div>' : ''}
       <div class="trade-stats">
-        <div class="stat"><div class="label">Entry</div><div class="val">$${trade.entryPrice.toFixed(2)}</div></div>
-        <div class="stat"><div class="label">Current</div><div class="val">$${currentPrice.toFixed(2)}</div></div>
-        <div class="stat"><div class="label">P&L (R)</div><div class="val" style="color:${rMultiple>=0?'#40a02b':'#d20f39'}">${rMultiple>=0?'+':''}${rMultiple.toFixed(2)}R</div></div>
-        <div class="stat"><div class="label">Stop</div><div class="val">$${trade.stopPrice.toFixed(2)}</div></div>
+        <div class="stat"><div class="label">Entry Price</div><div class="val">$${trade.entryPrice.toFixed(2)}</div></div>
+        <div class="stat"><div class="label">Current Price</div><div class="val">$${currentPrice.toFixed(2)}</div></div>
+        <div class="stat"><div class="label">Gain (R)</div><div class="val" style="color:${rMultiple>=0?'#40a02b':'#d20f39'}">${rMultiple>=0?'+':''}${rMultiple.toFixed(2)}R</div></div>
+        <div class="stat"><div class="label">Stop Price</div><div class="val">$${trade.stopPrice.toFixed(2)}</div></div>
         <div class="stat"><div class="label">ATR</div><div class="val">${currentATR?currentATR.toFixed(2):'--'}</div></div>
-        <div class="stat"><div class="label">ATR Gain</div><div class="val" style="color:${atrGain>=5?'#df8e1d':atrGain>=0?'#40a02b':'#d20f39'}">${atrGain.toFixed(2)}x</div></div>
         <div class="stat"><div class="label">Total Shares</div><div class="val">${trade.totalShares}</div></div>
       </div>
       ${pyramidHtml}
       <div class="trade-actions">
-        <button class="btn btn-sm btn-primary" onclick="addPyramidLayer(${idx})">Add Layer</button>
-        ${tightenAlert ? `<button class="btn btn-sm btn-amber" onclick="tightenStop(${idx})">Tighten Stop</button>` : ''}
         <button class="btn btn-sm btn-red" onclick="exitTrade(${idx})">Exit Trade</button>
         <button class="btn btn-sm btn-outline" onclick="navigateTo('chart',{ticker:'${trade.ticker}'})">View Chart</button>
       </div>
@@ -3433,43 +3431,17 @@ function renderPortfolio() {
       <canvas id="canvasMonthlyHeatmap" style="width:100%;display:block"></canvas>
     </div>
 
-    <div class="perf-two-col">
-      <div class="perf-card" style="margin-bottom:0">
-        <div class="perf-card-header"><h3>R-Multiple Distribution</h3></div>
-        <canvas id="canvasRDist" style="width:100%;height:180px;display:block"></canvas>
-      </div>
-      <div class="perf-card" style="margin-bottom:0;position:relative">
-        <div class="perf-card-header"><h3>Trade Scatter</h3></div>
-        <canvas id="canvasScatter" style="width:100%;height:180px;display:block"></canvas>
-        <div id="tooltipScatter" style="display:none;position:absolute;background:var(--card-solid);border:1px solid var(--card-border);border-radius:5px;padding:5px 8px;font-size:11px;pointer-events:none;z-index:10;box-shadow:var(--shadow)"></div>
-      </div>
-    </div>
-    <div style="margin-bottom:14px"></div>
-
     <div class="perf-card">
-      <div class="perf-card-header"><h3>Monthly P&amp;L</h3></div>
-      <canvas id="canvasMonthlyBars" style="width:100%;height:160px;display:block"></canvas>
+      <div class="perf-card-header"><h3>System Health</h3></div>
+      ${buildSystemHealth(pk)}
     </div>
-
-    <div class="perf-two-col">
-      <div class="perf-card" style="margin-bottom:0">
-        <div class="perf-card-header"><h3>System Health</h3></div>
-        ${buildSystemHealth(pk)}
-      </div>
-      <div class="perf-card" style="margin-bottom:0">
-        <div class="perf-card-header"><h3>Rolling Expectancy</h3></div>
-        <canvas id="canvasExpectancy" style="width:100%;height:120px;display:block"></canvas>
-      </div>
-    </div>
-    <div style="margin-bottom:14px"></div>
   `;
 
   const posTabHtml = `
     <div class="summary-row">
       <div class="summary-card"><div class="label">Open Trades</div><div class="value">${trades.length}</div></div>
       <div class="summary-card"><div class="label">Unrealized P&L</div><div class="value ${totalPnL>=0?'green':'red'}">${totalPnL>=0?'+':''}$${fmt(Math.abs(totalPnL))}</div></div>
-      <div class="summary-card"><div class="label">Total Open Risk</div><div class="value">$${fmt(totalRisk)}</div></div>
-      <div class="summary-card"><div class="label">Alerts</div><div class="value amber">${alerts}</div></div>
+      <div class="summary-card"><div class="label">Total $ at Risk</div><div class="value">$${fmt(totalRisk)}</div></div>
     </div>
     ${trades.length === 0 && !(profiles[pk].ibkrConnected && profiles[pk].ibkrPositions.length > 0)
       ? '<div style="text-align:center;padding:40px;color:var(--text3)"><p style="font-size:15px">No open trades</p><p style="margin-top:8px;font-size:13px">Use the Position Size Calculator to enter a new trade, or connect your IBKR account below</p></div>'
@@ -3495,12 +3467,7 @@ function renderPortfolio() {
     requestAnimationFrame(() => {
       drawEquityCurve();
       drawMonthlyHeatmap();
-      drawRDist();
-      drawScatter();
-      drawMonthlyBars();
-      drawExpectancy();
       setupEquityHover();
-      setupScatterHover();
     });
   }
 }
