@@ -449,8 +449,8 @@ const CHECKLIST_ITEMS = [
   'There is a clear exit plan defined including both the stop loss level and the MA cross reversal signal'
 ];
 
-// S&P 500 + Nasdaq 100 combined universe for CANSLIM screener
-const SCREENER_UNIVERSE = 'AAPL,ABBV,ABT,ACN,ADBE,ADI,ADM,ADP,ADSK,AEE,AEP,AFL,AIG,AIZ,AJG,AKAM,ALB,ALGN,ALK,ALL,ALLE,AMAT,AMCR,AMD,AME,AMGN,AMP,AMT,AMZN,ANET,ANSS,AON,AOS,APA,APD,APH,APTV,ARE,ATO,AVGO,AVY,AWK,AXP,AZO,BA,BAC,BAX,BBY,BDX,BEN,BIIB,BIO,BK,BKNG,BKR,BLK,BMY,BR,BRK-B,BRO,BSX,BWA,BXP,C,CAG,CAH,CARR,CAT,CB,CBOE,CBRE,CCI,CCL,CDNS,CDW,CE,CEG,CF,CFG,CHD,CHRW,CHTR,CI,CINF,CL,CLX,CMA,CMCSA,CME,CMG,CMI,CMS,CNC,CNP,COF,COO,COP,COST,CPRT,CPT,CRL,CRM,CSCO,CSGP,CSX,CTAS,CTRA,CTSH,CTVA,CVS,CVX,CZR,D,DAL,DD,DE,DFS,DG,DGX,DHI,DHR,DIS,DLR,DLTR,DOV,DOW,DPZ,DRI,DTE,DUK,DVA,DVN,DXCM,EA,EBAY,ECL,ED,EFX,EIX,EL,EMN,EMR,ENPH,EOG,EPAM,EQIX,EQR,EQT,ES,ESS,ETN,ETR,EVRG,EW,EXC,EXPD,EXPE,EXR,F,FANG,FAST,FBHS,FCX,FDS,FDX,FE,FFIV,FIS,FISV,FITB,FMC,FOX,FOXA,FRT,FTNT,FTV,GD,GE,GEHC,GILD,GIS,GL,GLW,GM,GNRC,GOOG,GOOGL,GPC,GPN,GRMN,GS,GWW,HAL,HAS,HBAN,HCA,HD,HOLX,HON,HPE,HPQ,HRL,HSIC,HST,HSY,HUM,HWM,IBM,ICE,IDXX,IEX,IFF,ILMN,INCY,INTC,INTU,INVH,IP,IPG,IQV,IR,IRM,ISRG,IT,ITW,IVZ,J,JBHT,JCI,JKHY,JNJ,JNPR,JPM,K,KDP,KEY,KEYS,KHC,KIM,KLAC,KMB,KMI,KMX,KO,KR,L,LDOS,LEN,LH,LHX,LIN,LKQ,LLY,LMT,LNC,LNT,LOW,LRCX,LUMN,LUV,LVS,LW,LYB,LYV,MA,MAA,MAR,MAS,MCD,MCHP,MCK,MCO,MDLZ,MDT,MET,META,MGM,MHK,MKC,MKTX,MLM,MMC,MMM,MNST,MO,MOH,MOS,MPC,MPWR,MRK,MRNA,MRO,MS,MSCI,MSFT,MSI,MTB,MTD,MU,NCLH,NDAQ,NDSN,NEE,NEM,NFLX,NI,NKE,NOC,NOW,NRG,NSC,NTAP,NTRS,NUE,NVDA,NVR,NWL,NWS,NWSA,NXPI,O,ODFL,OGN,OKE,OMC,ON,ORCL,ORLY,OTIS,OXY,PANW,PARA,PAYC,PAYX,PCAR,PCG,PEG,PEP,PFE,PFG,PG,PGR,PH,PHM,PKG,PLD,PM,PNC,PNR,PNW,POOL,PPG,PPL,PRU,PSA,PSX,PTC,PVH,PWR,PYPL,QCOM,QRVO,RCL,RE,REG,REGN,RF,RHI,RJF,RL,RMD,ROK,ROL,ROP,ROST,RSG,RTX,SBAC,SBUX,SCHW,SEE,SHW,SJM,SLB,SNA,SNPS,SO,SPG,SPGI,SRE,STE,STT,STX,STZ,SWK,SWKS,SYF,SYK,SYY,T,TAP,TDG,TDY,TECH,TEL,TER,TFC,TFX,TGT,TMO,TMUS,TPR,TRGP,TRMB,TROW,TRV,TSCO,TSLA,TSN,TT,TTWO,TXN,TXT,TYL,UAL,UDR,UHS,ULTA,UNH,UNP,UPS,URI,USB,V,VFC,VICI,VLO,VMC,VRSK,VRSN,VRTX,VTR,VTRS,VZ,WAB,WAT,WBA,WBD,WDC,WEC,WELL,WFC,WHR,WM,WMB,WMT,WRB,WRK,WST,WTW,WY,WYNN,XEL,XOM,XRAY,XYL,YUM,ZBH,ZBRA,ZION,ZTS,ABNB,AZN,BIDU,CPNG,CRWD,DDOG,DOCU,GFS,JD,LULU,MELI,MRVL,PDD,RIVN,TEAM,TTD,WDAY,ZM,ZS,ARM,COIN,DASH,SMCI,PLTR'.split(',');
+// FMP API key for CANSLIM fundamental data
+const FMP_KEY = 'lERR07QQH3XgbmwEVvKvqoaCgUCmDchd';
 
 const CORS_PROXY = 'https://corsproxy.io/?';
 
@@ -673,10 +673,62 @@ async function refreshAllTickers() {
   checkRTargets();
 }
 
-// ─── SCREENER ───
-// Per-ticker caching: results accumulate across runs so partial runs still build up data.
-// Each ticker's screen result is cached individually for 24h.
-// Failed/timed-out tickers are retried on the next run.
+// ─── CANSLIM SCREENER (FMP + Yahoo) ───
+// Phase 1: FMP stock screener → candidate universe (1 API call, cached 24h)
+// Phase 2: Yahoo Finance OHLC → MA signal per ticker (cached 1h)
+// Phase 3: FMP financial-growth → EPS + revenue growth for LONG-trend stocks only (cached 24h)
+// Total FMP calls: ~51/day, well within the 250/day free tier
+
+function fmpCacheGet(key, maxAge) {
+  try {
+    const s = localStorage.getItem(key);
+    if (!s) return null;
+    const d = JSON.parse(s);
+    if (Date.now() - d.ts > maxAge) return null;
+    return d.data;
+  } catch (_) { return null; }
+}
+function fmpCacheSet(key, data) {
+  try { localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data })); } catch (_) {}
+}
+
+async function fetchFMPCandidates() {
+  const cached = fmpCacheGet('tp_fmp_candidates', 86400000);
+  if (cached) return cached;
+  const url = `https://financialmodelingprep.com/api/v3/stock-screener?marketCapMoreThan=1000000000&volumeMoreThan=500000&priceMoreThan=10&country=US&isEtf=false&exchange=NYSE,NASDAQ&limit=250&apikey=${FMP_KEY}`;
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    if (!Array.isArray(data)) throw new Error('Unexpected response format');
+    const tickers = data.map(s => s.symbol).filter(s => s && !s.includes('.'));
+    fmpCacheSet('tp_fmp_candidates', tickers);
+    return tickers;
+  } catch (e) {
+    console.warn('[FMP] Screener fetch failed:', e.message);
+    return null;
+  }
+}
+
+async function fetchFMPGrowth(ticker) {
+  const cacheKey = `tp_fmp_g_${ticker}`;
+  const cached = fmpCacheGet(cacheKey, 86400000);
+  if (cached) return cached;
+  const url = `https://financialmodelingprep.com/stable/financial-growth?symbol=${ticker}&period=quarter&limit=1&apikey=${FMP_KEY}`;
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) return null;
+    const raw = await resp.json();
+    const latest = Array.isArray(raw) ? raw[0] : raw;
+    if (!latest) return null;
+    const result = {
+      epsGrowth: latest.epsgrowth ?? latest.epsGrowth ?? null,
+      revenueGrowth: latest.revenueGrowth ?? null,
+    };
+    fmpCacheSet(cacheKey, result);
+    return result;
+  } catch (_) { return null; }
+}
 
 function loadScreenCache() {
   const s = localStorage.getItem('tp_screen_cache');
@@ -689,47 +741,31 @@ function saveScreenCache(cache) {
 async function fetchQuickScreen(ticker) {
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?range=1y&interval=1d&includePrePost=false`;
   const data = await fetchYahoo(url);
-  if (!data || !data.chart || !data.chart.result || !data.chart.result[0]) return null;
+  if (!data?.chart?.result?.[0]) return null;
   const r = data.chart.result[0];
   const q = r.indicators.quote[0];
   const closes = (q.close || []).filter(c => c != null);
-  const volumes = (q.volume || []).filter(v => v != null);
   if (closes.length < 60) return null;
 
-  const perf6m = closes.length >= 126 ?
-    ((closes[closes.length-1] - closes[closes.length-126]) / closes[closes.length-126]) * 100 :
-    ((closes[closes.length-1] - closes[0]) / closes[0]) * 100;
-  const avgVol = volumes.slice(-30).reduce((a,b) => a+b, 0) / Math.min(30, volumes.slice(-30).length);
-  const mCap = r.meta.marketCap || 0;
-
-  // 3-month performance
-  const c3m = closes.slice(-63);
-  const perf3m = c3m.length > 1 ? ((c3m[c3m.length-1] - c3m[0]) / c3m[0]) * 100 : 0;
-  // Price above 50-day MA
-  const ma50 = closes.slice(-50).reduce((a,b) => a+b, 0) / 50;
-  const aboveMa50 = closes[closes.length-1] > ma50;
-
-  // Calculate MA10/MA20 trend direction and days in trend
   const ma10Arr = calcSMAArray(closes, 10);
   const ma20Arr = calcSMAArray(closes, 20);
-  const ma10 = ma10Arr[ma10Arr.length-1];
-  const ma20 = ma20Arr[ma20Arr.length-1];
+  const ma10 = ma10Arr[ma10Arr.length - 1];
+  const ma20 = ma20Arr[ma20Arr.length - 1];
   const trendDir = (ma10 != null && ma20 != null) ? (ma10 > ma20 ? 'LONG' : 'SHORT') : 'NEUTRAL';
-  // Count trading days since last crossover
   let trendDays = 0;
   for (let i = ma10Arr.length - 1; i > 0; i--) {
-    if (ma10Arr[i]==null||ma10Arr[i-1]==null||ma20Arr[i]==null||ma20Arr[i-1]==null) break;
-    const currAbove = ma10Arr[i] > ma20Arr[i];
-    const prevAbove = ma10Arr[i-1] > ma20Arr[i-1];
-    if (currAbove !== prevAbove) break;
+    if (!ma10Arr[i] || !ma10Arr[i-1] || !ma20Arr[i] || !ma20Arr[i-1]) break;
+    if ((ma10Arr[i] > ma20Arr[i]) !== (ma10Arr[i-1] > ma20Arr[i-1])) break;
     trendDays++;
   }
+  const highs = (q.high || []).filter(h => h != null);
+  const lows = (q.low || []).filter(l => l != null);
+  const atr = calcATR(highs, lows, closes, 14);
 
   return {
     ticker,
-    price: closes[closes.length-1],
-    perf6m, perf3m, avgVol, marketCap: mCap, aboveMa50,
-    trendDir, trendDays,
+    price: r.meta.regularMarketPrice || closes[closes.length - 1],
+    trendDir, trendDays, atr,
     ts: Date.now()
   };
 }
@@ -740,68 +776,82 @@ async function runScreener() {
   state.screenerProgress = 0;
   if (state.activeScreen === 'dashboard') renderDashboard();
 
-  const cache = loadScreenCache();
-  const now = Date.now();
-  const MAX_AGE = 86400000; // 24 hours
-
-  // Determine which tickers need fetching (not cached, expired, or missing new fields)
-  const isValid = t => cache[t] && (now - cache[t].ts) <= MAX_AGE && cache[t].trendDir !== undefined;
-  const needsFetch = SCREENER_UNIVERSE.filter(t => !isValid(t));
-  const alreadyCached = SCREENER_UNIVERSE.filter(t => isValid(t));
-  const total = needsFetch.length;
-
-  showToast(`Screening ${total} tickers (${alreadyCached.length} cached)...`);
-
-  // Fetch uncached tickers
-  const batchSize = 8;
-  for (let i = 0; i < total; i += batchSize) {
-    const batch = needsFetch.slice(i, i + batchSize);
-    const results = await Promise.all(batch.map(t => fetchQuickScreen(t)));
-    results.forEach((r, j) => {
-      if (r) {
-        cache[batch[j]] = r;
-      }
-      // Don't cache failures - they'll be retried next run
-    });
-    state.screenerProgress = Math.round((i / Math.max(total, 1)) * 90);
-    if (state.activeScreen === 'dashboard') renderScreenerProgress();
-    if (i + batchSize < total) await new Promise(r => setTimeout(r, 400));
+  // ── Phase 1: Candidate universe from FMP ──
+  showToast('Fetching CANSLIM candidates from FMP...');
+  const candidates = await fetchFMPCandidates();
+  if (!candidates || candidates.length === 0) {
+    showToast('FMP screener unavailable — check API key or connection');
+    state.screenerRunning = false;
+    if (state.activeScreen === 'dashboard') renderDashboard();
+    return;
   }
 
-  // Save cache after fetching
+  // ── Phase 2: Yahoo MA signal for all candidates ──
+  const cache = loadScreenCache();
+  const now = Date.now();
+  const YAHOO_TTL = 3600000; // 1h
+  const needsFetch = candidates.filter(t => !cache[t] || (now - cache[t].ts) > YAHOO_TTL);
+  showToast(`Checking MA signals for ${candidates.length} stocks (${needsFetch.length} need refresh)...`);
+
+  const batchSize = 8;
+  for (let i = 0; i < needsFetch.length; i += batchSize) {
+    const batch = needsFetch.slice(i, i + batchSize);
+    const results = await Promise.all(batch.map(t => fetchQuickScreen(t)));
+    results.forEach((r, j) => { if (r) cache[batch[j]] = r; });
+    state.screenerProgress = Math.round((i / Math.max(needsFetch.length, 1)) * 50);
+    if (state.activeScreen === 'dashboard') renderScreenerProgress();
+    if (i + batchSize < needsFetch.length) await new Promise(r => setTimeout(r, 300));
+  }
   saveScreenCache(cache);
 
-  // Apply filters to ALL cached results (both freshly fetched and previously cached)
+  // Only fetch fundamentals for stocks already in a LONG uptrend — saves API calls
+  const longCandidates = candidates.filter(t => cache[t] && cache[t].trendDir === 'LONG');
+
+  // ── Phase 3: FMP EPS + revenue growth for LONG-trend stocks ──
+  showToast(`Fetching EPS/revenue growth for ${longCandidates.length} uptrending stocks...`);
+  const batchSize2 = 5;
+  for (let i = 0; i < longCandidates.length; i += batchSize2) {
+    const batch = longCandidates.slice(i, i + batchSize2);
+    await Promise.all(batch.map(t => fetchFMPGrowth(t)));
+    state.screenerProgress = 50 + Math.round((i / Math.max(longCandidates.length, 1)) * 45);
+    if (state.activeScreen === 'dashboard') renderScreenerProgress();
+    if (i + batchSize2 < longCandidates.length) await new Promise(r => setTimeout(r, 200));
+  }
+
+  // ── Phase 4: Apply CANSLIM filters ──
   const qualified = [];
-  SCREENER_UNIVERSE.forEach(ticker => {
-    const r = cache[ticker];
-    if (!r) return;
-    if (r.perf6m <= 20) return;
-    if (r.avgVol <= 500000) return;
-    if (r.perf3m < 10) return;
-    if (!r.aboveMa50) return;
-    if (r.marketCap > 0 && r.marketCap < 2e9) return;
-    qualified.push(r);
+  for (const ticker of longCandidates) {
+    const tech = cache[ticker];
+    if (!tech) continue;
+    const growth = fmpCacheGet(`tp_fmp_g_${ticker}`, 86400000);
+    if (!growth) continue;
+    const { epsGrowth, revenueGrowth } = growth;
+    if (epsGrowth == null || epsGrowth < 0.20) continue;      // C: Current earnings > 20%
+    if (revenueGrowth == null || revenueGrowth < 0.15) continue; // A: Annual/quarterly sales > 15%
+    qualified.push({ ticker, price: tech.price, trendDir: tech.trendDir, trendDays: tech.trendDays, atr: tech.atr, epsGrowth, revenueGrowth });
+  }
+
+  // New crosses first, then ranked by EPS growth
+  qualified.sort((a, b) => {
+    if (a.trendDays === 0 && b.trendDays !== 0) return -1;
+    if (b.trendDays === 0 && a.trendDays !== 0) return 1;
+    return b.epsGrowth - a.epsGrowth;
   });
 
-  // Sort by 6-month performance and take top 15
-  qualified.sort((a,b) => b.perf6m - a.perf6m);
   state.screenerResults = qualified.slice(0, 25);
   state.screenerRunning = false;
   state.screenerProgress = 100;
 
-  // Cache final results list
-  localStorage.setItem('tp_screener', JSON.stringify({results: state.screenerResults, timestamp: Date.now()}));
-
+  localStorage.setItem('tp_screener', JSON.stringify({ results: state.screenerResults, timestamp: Date.now() }));
   if (state.activeScreen === 'dashboard') renderDashboard();
-  showToast(`Screener complete: ${qualified.length} qualify, top 15 shown (${alreadyCached.length + total - needsFetch.length} screened)`);
+  showToast(`CANSLIM screen complete: ${qualified.length} qualify, showing top ${Math.min(25, qualified.length)}`);
 }
 
 function loadCachedScreener() {
   const s = localStorage.getItem('tp_screener');
   if (!s) return;
   const data = JSON.parse(s);
-  if (Date.now() - data.timestamp < 86400000) {
+  if (Date.now() - data.timestamp < 3600000) {
     state.screenerResults = data.results || [];
   }
 }
@@ -1462,16 +1512,23 @@ function renderScreenerTable() {
   state.screenerResults.forEach(r => {
     const sigClass = r.trendDir === 'LONG' ? 'long' : r.trendDir === 'SHORT' ? 'short' : 'neutral';
     const isNew = r.trendDays === 0;
+    const epsPct = r.epsGrowth != null ? (r.epsGrowth * 100) : null;
+    const revPct = r.revenueGrowth != null ? (r.revenueGrowth * 100) : null;
+    const epsStr = epsPct != null ? (epsPct >= 0 ? '+' : '') + epsPct.toFixed(0) + '%' : '--';
+    const revStr = revPct != null ? (revPct >= 0 ? '+' : '') + revPct.toFixed(0) + '%' : '--';
+    const epsColor = epsPct >= 50 ? '#40a02b' : epsPct >= 20 ? '#df8e1d' : 'var(--text2)';
+    const revColor = revPct >= 30 ? '#40a02b' : revPct >= 15 ? '#df8e1d' : 'var(--text2)';
     rows += `<tr onclick="navigateTo('chart',{ticker:'${r.ticker}'})" style="${isNew ? 'background:rgba(249,226,175,0.08);' : ''}">
       <td style="font-weight:800;font-family:var(--mono)">${r.ticker}${isNew ? ' <span style="background:linear-gradient(135deg,#fab387,#f9e2af);color:#1e1e2e;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:800">NEW</span>' : ''}</td>
       <td style="font-family:var(--mono)">$${fmt(r.price)}</td>
-      <td style="font-family:var(--mono);color:#40a02b">+${r.perf6m.toFixed(1)}%</td>
+      <td style="font-family:var(--mono);color:${epsColor}">${epsStr}</td>
+      <td style="font-family:var(--mono);color:${revColor}">${revStr}</td>
       <td><span class="signal-badge ${sigClass}">${r.trendDir || '--'}</span></td>
       <td style="font-size:12px;color:${isNew ? '#df8e1d' : 'var(--text3)'};${isNew ? 'font-weight:700' : ''}">${r.trendDays != null ? r.trendDays + 'd' : '--'}</td>
     </tr>`;
   });
   return `<div class="screener-table-wrap"><table class="screener-table">
-    <thead><tr><th>Ticker</th><th>Price</th><th>6M Perf</th><th>Signal</th><th>Cross</th></tr></thead>
+    <thead><tr><th>Ticker</th><th>Price</th><th>EPS Grw</th><th>Rev Grw</th><th>Signal</th><th>Cross</th></tr></thead>
     <tbody>${rows}</tbody>
   </table></div>`;
 }
