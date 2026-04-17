@@ -149,7 +149,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;
 .section-header .count{font-size:12px;color:var(--text3);font-family:var(--mono)}
 
 /* Chart Screen */
-.chart-header{display:flex;align-items:center;gap:16px;margin-bottom:12px;flex-wrap:wrap;min-height:72px;padding:10px 14px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius)}
+.chart-header{display:flex;align-items:center;gap:16px;margin-bottom:8px;flex-wrap:wrap;min-height:72px;padding:10px 14px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius)}
 .chart-header .back-btn{width:36px;height:36px;border-radius:var(--radius-sm);border:1px solid var(--card-border);background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);flex-shrink:0}
 .chart-ticker-block{display:flex;flex-direction:column;flex-shrink:0}
 .chart-ticker-block .chart-ticker{font-size:26px;font-weight:800;font-family:var(--mono);line-height:1.1}
@@ -161,13 +161,12 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;
 .chart-price-block{margin-left:auto;text-align:right;flex-shrink:0}
 .chart-price-block .chart-price{font-size:26px;font-weight:700;font-family:var(--mono);line-height:1.1}
 .chart-price-block .chart-day-chg{font-size:13px;font-weight:500}
-.chart-container{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:12px;box-shadow:var(--shadow);margin-bottom:10px}
-.chart-canvas-wrap{position:relative;width:100%;height:calc(100vh - 310px);min-height:480px}
+.chart-container{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:10px;box-shadow:var(--shadow)}
+.chart-canvas-wrap{position:relative;width:100%;height:calc(100dvh - var(--header-h) - 180px);min-height:520px}
 .chart-canvas-wrap canvas{width:100%;height:100%}
 .chart-legend{display:flex;gap:12px;margin-top:8px;font-size:11px;align-items:center}
 .chart-legend .legend-item{display:flex;align-items:center;gap:4px}
 .chart-legend .legend-dot{width:10px;height:3px;border-radius:2px}
-.chart-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
 .chart-info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
 .chart-info-card{background:var(--card);border:1px solid var(--card-border);border-left:3px solid var(--card-border);border-radius:var(--radius-sm);padding:8px 12px}
 .chart-info-card .label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;font-weight:500}
@@ -324,7 +323,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;
   .content{padding:14px}
   .summary-row{grid-template-columns:1fr 1fr}
   .signal-grid{grid-template-columns:1fr}
-  .chart-canvas-wrap{height:calc(100vh - 340px);min-height:360px}
+  .chart-canvas-wrap{height:calc(100dvh - var(--botnav-h) - 200px);min-height:380px}
   .chart-stats{gap:12px;border-left:none;border-right:none;padding:6px 0}
   .chart-header{flex-wrap:wrap;gap:10px}
   .calc-outputs{grid-template-columns:1fr}
@@ -964,7 +963,7 @@ class ChartEngine {
     this.dragStartX = 0;
     this.dragStartView = 0;
     // Chart theme: dark or light
-    this.chartDark = true;
+    this.chartDark = false;
     // Price-axis vertical drag (scale candle height)
     this.isPriceAxisDrag = false;
     this.priceAxisDragStartY = 0;
@@ -1957,13 +1956,10 @@ function renderChartScreen() {
           <div class="legend-item"><div class="legend-dot" style="background:#89b4fa"></div>MA10</div>
           <div class="legend-item"><div class="legend-dot" style="background:#94e2d5"></div>MA20</div>
           <div class="legend-item"><div style="width:12px;height:12px;border-radius:2px;background:#f9e2af;font-size:7px;line-height:12px;text-align:center;color:#1e1e2e;font-weight:800;flex-shrink:0">E</div>Earnings</div>
-          <button id="chartThemeToggle" onclick="toggleChartTheme()" style="margin-left:auto;background:none;border:1px solid var(--card-border);border-radius:4px;padding:2px 9px;font-size:10px;cursor:pointer;color:var(--text2);font-family:var(--sans)">☀ Light</button>
+          <button id="chartThemeToggle" onclick="toggleChartTheme()" style="margin-left:auto;background:none;border:1px solid var(--card-border);border-radius:4px;padding:2px 9px;font-size:10px;cursor:pointer;color:var(--text2);font-family:var(--sans)">🌙 Dark</button>
         </div>
       </div>
 
-      <div class="chart-actions">
-        <button class="btn btn-primary" onclick="openCalcFromChart('${ticker}')" style="padding:10px 24px;font-size:13px;font-weight:700;background:linear-gradient(135deg,#89b4fa,#74c7ec);box-shadow:0 2px 12px rgba(137,180,250,0.3)">↗ Enter Trade</button>
-      </div>
     </div>
   `;
 
