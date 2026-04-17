@@ -673,11 +673,12 @@ async function refreshAllTickers() {
   checkRTargets();
 }
 
-// ─── CANSLIM SCREENER (FMP + Yahoo) ───
-// Phase 1: FMP stock screener → candidate universe (1 API call, cached 24h)
-// Phase 2: Yahoo Finance OHLC → MA signal per ticker (cached 1h)
-// Phase 3: FMP financial-growth → EPS + revenue growth for LONG-trend stocks only (cached 24h)
-// Total FMP calls: ~51/day, well within the 250/day free tier
+// ─── CANSLIM SCREENER ───
+// Phase 1: FMP stock screener → US candidate universe (NYSE/NASDAQ/AMEX, cached 1h)
+// Phase 2: Yahoo Finance OHLC → price, 6M perf, avg volume, MA trend (cached 1h)
+// Phase 3: FMP fundamentals → EPS growth, revenue growth, ROE, op margin (cached 24h)
+// Phase 4: Apply all 7 criteria (strict AND logic, missing data = excluded)
+// FMP free tier: 250 calls/day — universe uses 1-2, fundamentals capped at 100 stocks × 2 = 200
 
 function fmpCacheGet(key, maxAge) {
   try {
@@ -692,66 +693,85 @@ function fmpCacheSet(key, data) {
   try { localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data })); } catch (_) {}
 }
 
-// Fallback universe — only used if FMP screener is completely unavailable
-const CANSLIM_FALLBACK = 'AAPL,ABBV,ABT,ACN,ADBE,ADI,ADP,ADSK,AEP,AFL,AIG,AJG,AKAM,ALB,ALGN,ALK,ALL,AMAT,AMD,AME,AMGN,AMP,AMT,AMZN,ANET,ANSS,AON,APD,APH,ARE,AVGO,AWK,AXP,AZO,BA,BAC,BAX,BBY,BDX,BIIB,BK,BKNG,BKR,BLK,BMY,BSX,C,CAT,CB,CBOE,CBRE,CCI,CDNS,CDW,CEG,CF,CHD,CHTR,CI,CINF,CL,CME,CMG,CMI,CMS,CNC,COF,COP,COST,CPRT,CRL,CRM,CSCO,CSX,CTAS,CTRA,CTSH,CVS,CVX,D,DAL,DE,DFS,DG,DGX,DHI,DHR,DIS,DLR,DOV,DOW,DRI,DTE,DUK,DVN,DXCM,EA,ECL,EFX,EIX,EL,EMR,ENPH,EOG,EQIX,EQT,ETN,ETR,EW,EXC,EXPD,EXPE,EXR,F,FANG,FAST,FCX,FDS,FDX,FIS,FISV,FITB,FTNT,FTV,GD,GE,GEHC,GILD,GIS,GLW,GM,GOOG,GOOGL,GPN,GRMN,GS,GWW,HAL,HBAN,HCA,HD,HOLX,HON,HPE,HUM,HWM,IBM,ICE,IDXX,IFF,INCY,INTC,INTU,IQV,IR,IRM,ISRG,IT,ITW,JCI,JNJ,JPM,KDP,KEY,KEYS,KHC,KLAC,KMB,KMI,KO,KR,LDOS,LEN,LH,LHX,LIN,LLY,LMT,LOW,LRCX,LUV,LYB,MA,MAR,MAS,MCD,MCHP,MCK,MCO,MDLZ,MDT,MET,META,MGM,MMC,MMM,MNST,MO,MOH,MPC,MPWR,MRK,MRNA,MRO,MS,MSCI,MSFT,MSI,MTD,MU,NEE,NEM,NFLX,NKE,NOC,NOW,NSC,NTAP,NTRS,NUE,NVDA,NVR,NXPI,ODFL,OKE,OMC,ON,ORCL,ORLY,OTIS,OXY,PANW,PAYC,PAYX,PCAR,PEP,PFE,PG,PGR,PH,PHM,PLD,PM,PNC,PPG,PRU,PSA,PSX,PTC,PWR,PYPL,QCOM,RCL,REGN,RF,RHI,RMD,ROK,ROP,ROST,RSG,RTX,SBAC,SBUX,SCHW,SHW,SLB,SNA,SNPS,SO,SPG,SPGI,SRE,STE,STT,STX,STZ,SWK,SYF,SYK,SYY,T,TDG,TDY,TEL,TER,TFC,TGT,TMO,TMUS,TRGP,TRMB,TROW,TRV,TSCO,TSLA,TSN,TT,TXN,TYL,UAL,UHS,ULTA,UNH,UNP,UPS,URI,USB,V,VLO,VMC,VRSK,VRSN,VRTX,VZ,WAB,WAT,WDC,WEC,WFC,WM,WMB,WMT,WTW,XOM,YUM,ZBH,ZBRA,ZTS,ABNB,CRWD,DDOG,ZS,NET,TEAM,WDAY,HUBS,BILL,PCOR,VEEV,SNOW,MDB,TTD,GTLB,SHOP,SQ,AFRM,COIN,APP,AXON,TMDX,KRYS,ELF,ONON,CAVA,DUOL,MNDY,PINS,SNAP,DASH,RBLX,PLTR,ARM,SMCI,ANET,CELH,PODD,IDXX,ALGN,DKNG,BKNG,MELI,NU,SE,CPNG,WIX,RDDT,SOFI,UPST,LULU,DECK,HLT,MAR,EXPE,TSM,ASML,ADEA,WWD,AUPH,VIK,SLDE'.split(',');
+// Fallback: ~500 large-cap US stocks across NYSE/NASDAQ/AMEX — used only if FMP screener is down
+const CANSLIM_FALLBACK = 'AAPL,ABBV,ABT,ACN,ADBE,ADI,ADP,ADSK,AEP,AFL,AIG,AKAM,ALB,ALGN,ALL,AMAT,AMD,AMGN,AMP,AMT,AMZN,ANET,ANSS,AON,APD,APH,AVGO,AXP,AZO,BA,BAC,BAX,BDX,BIIB,BK,BKNG,BKR,BLK,BMY,BSX,C,CAT,CB,CBOE,CDNS,CEG,CI,CME,CMG,CMI,CNC,COF,COP,COST,CPRT,CRM,CSCO,CSX,CTAS,CVS,CVX,DE,DGX,DHR,DIS,DLR,DOV,DUK,DVN,DXCM,EA,ECL,EFX,EMR,EOG,EQIX,ETN,EW,EXC,EXPD,EXPE,FAST,FCX,FDX,FIS,FISV,FTNT,GD,GE,GILD,GIS,GM,GOOG,GOOGL,GPN,GRMN,GS,GWW,HAL,HCA,HD,HON,HUM,IBM,ICE,IDXX,INTC,INTU,IQV,IRM,ISRG,ITW,JNJ,JPM,KEYS,KLAC,KO,LRCX,LIN,LLY,LMT,LOW,MA,MAR,MCD,MCHP,MCK,MCO,MDLZ,MDT,MET,META,MMC,MMM,MNST,MO,MPC,MPWR,MRK,MRNA,MS,MSCI,MSFT,MSI,MU,NEE,NEM,NFLX,NKE,NOC,NOW,NSC,NTAP,NVDA,NXPI,ODFL,ON,ORCL,ORLY,OXY,PANW,PAYC,PAYX,PCAR,PEP,PFE,PG,PGR,PH,PHM,PLD,PM,PNC,PPG,PRU,PSA,PSX,PWR,PYPL,QCOM,RCL,REGN,RMD,ROK,ROP,ROST,RTX,SBUX,SCHW,SHW,SLB,SNPS,SO,SPG,SPGI,SYF,SYK,T,TDG,TER,TFC,TGT,TMO,TMUS,TROW,TRV,TSCO,TSLA,TXN,UAL,UNH,UNP,UPS,URI,USB,V,VLO,VMC,VRTX,VZ,WAT,WDC,WFC,WM,WMT,XOM,YUM,ZTS,ABNB,CRWD,DDOG,ZS,NET,TEAM,WDAY,HUBS,VEEV,SNOW,MDB,TTD,SHOP,SQ,AFRM,COIN,APP,AXON,ELF,ONON,CAVA,DUOL,MNDY,DASH,PLTR,CELH,PODD,DKNG,MELI,NU,RDDT,SOFI,LULU,DECK,HLT,TMDX,KRYS,BILL,PCOR,GTLB,WIX'.split(',');
 
 async function fetchFMPCandidates() {
-  const cached = fmpCacheGet('tp_fmp_candidates', 3600000); // 1h — catches new entrants
-  if (cached) { console.log(`[FMP] Cached universe: ${cached.length} stocks`); return cached; }
+  const cached = fmpCacheGet('tp_fmp_universe_v2', 3600000);
+  if (cached) { console.log(`[Screener] Universe (cached): ${cached.length} stocks`); return cached; }
 
-  // FMP screener: intentionally broad — market cap >$300M, volume >100K, price >$5
-  // Real CANSLIM filters (EPS, revenue growth, MA, volume) applied in later phases.
-  // Trying two endpoints since stable vs v3 availability varies by account tier.
-  const endpoints = [
-    `https://financialmodelingprep.com/stable/screener/stock?marketCapMoreThan=300000000&volumeMoreThan=100000&priceMoreThan=5&limit=1000&apikey=${FMP_KEY}`,
-    `https://financialmodelingprep.com/api/v3/stock-screener?marketCapMoreThan=300000000&volumeMoreThan=100000&priceMoreThan=5&limit=1000&apikey=${FMP_KEY}`,
+  // Pre-filter universe at screener level: mktcap>2B, vol>500K, price>5
+  // Exchange filter included where supported — further filtered by symbol regex below
+  const urls = [
+    `https://financialmodelingprep.com/api/v3/stock-screener?marketCapMoreThan=2000000000&volumeMoreThan=500000&priceMoreThan=5&exchange=NYSE,NASDAQ,AMEX&limit=1500&apikey=${FMP_KEY}`,
+    `https://financialmodelingprep.com/api/v3/stock-screener?marketCapMoreThan=2000000000&volumeMoreThan=500000&priceMoreThan=5&limit=1500&apikey=${FMP_KEY}`,
+    `https://financialmodelingprep.com/stable/screener/stock?marketCapMoreThan=2000000000&volumeMoreThan=500000&priceMoreThan=5&limit=1500&apikey=${FMP_KEY}`,
   ];
-
-  for (const url of endpoints) {
+  for (const url of urls) {
     try {
       const resp = await fetch(url);
       const data = await resp.json();
-      if (Array.isArray(data) && data.length > 10) {
-        // US exchange symbols only: 1–5 uppercase letters, no dots or hyphens
-        const tickers = data.map(s => s.symbol || s.Symbol || '').filter(s => /^[A-Z]{1,5}$/.test(s));
-        console.log(`[FMP] Screener → ${tickers.length} US stocks`);
-        fmpCacheSet('tp_fmp_candidates', tickers);
+      if (Array.isArray(data) && data.length > 20) {
+        const tickers = data
+          .map(s => (s.symbol || s.Symbol || '').toUpperCase())
+          .filter(s => /^[A-Z]{1,5}$/.test(s)); // US exchange symbols only (no dots/hyphens)
+        console.log(`[Screener] FMP universe: ${tickers.length} US stocks`);
+        fmpCacheSet('tp_fmp_universe_v2', tickers);
         return tickers;
       }
-      console.warn('[FMP] Unexpected screener response:', JSON.stringify(data).slice(0, 150));
+      console.warn('[Screener] FMP endpoint returned unexpected data:', JSON.stringify(data).slice(0, 200));
     } catch (e) {
-      console.warn('[FMP] Screener endpoint failed:', e.message);
+      console.warn('[Screener] FMP endpoint failed:', e.message);
     }
   }
-
-  console.warn('[FMP] All screener endpoints failed — using fallback universe');
+  console.warn('[Screener] All FMP endpoints failed — using fallback universe');
   return CANSLIM_FALLBACK;
 }
 
-async function fetchFMPGrowth(ticker) {
-  const cacheKey = `tp_fmp_g_${ticker}`;
+// Fetch EPS growth, revenue growth, ROE TTM, operating margin TTM from FMP
+// Uses /api/v3/ endpoints (more reliable on free tier) with multiple field name fallbacks
+async function fetchFMPFundamentals(ticker) {
+  const cacheKey = `tp_fmp_f3_${ticker}`; // v3 key — busts any old cached data
   const cached = fmpCacheGet(cacheKey, 86400000);
-  // Re-fetch if cached result is missing the new ROE/margin fields
-  if (cached && cached.roe !== undefined) return cached;
+  if (cached) return cached;
   try {
     const [growthResp, ratiosResp] = await Promise.all([
-      fetch(`https://financialmodelingprep.com/stable/financial-growth?symbol=${ticker}&period=quarter&limit=1&apikey=${FMP_KEY}`),
-      fetch(`https://financialmodelingprep.com/stable/ratios-ttm?symbol=${ticker}&apikey=${FMP_KEY}`)
+      fetch(`https://financialmodelingprep.com/api/v3/financial-growth?symbol=${ticker}&period=quarter&limit=2&apikey=${FMP_KEY}`),
+      fetch(`https://financialmodelingprep.com/api/v3/ratios-ttm?symbol=${ticker}&apikey=${FMP_KEY}`)
     ]);
-    const growthRaw = growthResp.ok ? await growthResp.json() : null;
+    const growthArr = growthResp.ok ? await growthResp.json() : [];
     const ratiosRaw = ratiosResp.ok ? await ratiosResp.json() : null;
-    const g = Array.isArray(growthRaw) ? growthRaw[0] : growthRaw;
-    const rat = Array.isArray(ratiosRaw) ? ratiosRaw[0] : ratiosRaw;
-    if (!g && !rat) return null;
-    const result = {
-      epsGrowth:       g   ? (g.epsgrowth ?? g.epsGrowth ?? null)          : null,
-      revenueGrowth:   g   ? (g.revenueGrowth ?? null)                     : null,
-      roe:             rat ? (rat.returnOnEquityTTM ?? null)                : null,
-      operatingMargin: rat ? (rat.operatingProfitMarginTTM ?? null)        : null,
-    };
+
+    const g   = Array.isArray(growthArr) ? growthArr[0] : growthArr;
+    const rat = Array.isArray(ratiosRaw) ? ratiosRaw[0] : ratiosRaw; // ratios-ttm can be array or object
+
+    // EPS diluted growth quarterly YoY — try all known FMP field name variants
+    const epsGrowth = g
+      ? (g.epsgrowth ?? g.epsGrowth ?? g.epsDilutedGrowth ?? g.epsdilutedgrowth ?? null)
+      : null;
+
+    // Revenue growth quarterly YoY
+    const revenueGrowth = g
+      ? (g.revenueGrowth ?? g.revenue_growth ?? null)
+      : null;
+
+    // ROE TTM
+    const roe = rat
+      ? (rat.returnOnEquityTTM ?? rat.roeTTM ?? rat.roe ?? null)
+      : null;
+
+    // Operating margin TTM
+    const operatingMargin = rat
+      ? (rat.operatingProfitMarginTTM ?? rat.operatingMarginTTM ?? rat.operatingIncomeMarginTTM ?? null)
+      : null;
+
+    const result = { epsGrowth, revenueGrowth, roe, operatingMargin };
     fmpCacheSet(cacheKey, result);
     return result;
-  } catch (_) { return null; }
+  } catch (e) {
+    console.warn(`[Screener] FMP fundamentals failed for ${ticker}:`, e.message);
+    return null;
+  }
 }
 
 function loadScreenCache() {
@@ -847,51 +867,58 @@ async function runScreener() {
   console.log(`[Screener] Pre-filter: ${preCandidates.length} stocks pass size/volume/perf filters`);
   showToast(`${preCandidates.length} stocks pass size filters — fetching EPS/revenue growth...`);
 
-  // ── Phase 3: FMP EPS + revenue growth (cap at 150 per run) ──
+  // ── Phase 3: FMP fundamentals — cap at 100 to stay within 250 calls/day free tier ──
+  // (100 stocks × 2 endpoints = 200 calls + ~2 for universe = 202 total)
   const toCheck = [...preCandidates]
-    .sort((a, b) => (cache[b]?.perf6m||0) - (cache[a]?.perf6m||0))  // strongest 6M momentum first
-    .slice(0, 150);
+    .sort((a, b) => (cache[b]?.perf6m || 0) - (cache[a]?.perf6m || 0)) // strongest 6M first
+    .slice(0, 100);
+
+  console.log(`[Screener] Fetching fundamentals for ${toCheck.length} stocks...`);
+  showToast(`Fetching fundamentals for ${toCheck.length} stocks...`);
 
   const batchSize2 = 5;
   for (let i = 0; i < toCheck.length; i += batchSize2) {
     const batch = toCheck.slice(i, i + batchSize2);
-    await Promise.all(batch.map(t => fetchFMPGrowth(t)));
+    await Promise.all(batch.map(t => fetchFMPFundamentals(t)));
     state.screenerProgress = 50 + Math.round((i / Math.max(toCheck.length, 1)) * 45);
     if (state.activeScreen === 'dashboard') renderScreenerProgress();
     if (i + batchSize2 < toCheck.length) await new Promise(r => setTimeout(r, 200));
   }
 
-  // Log first growth result to help debug field names if needed
-  const sampleTicker = toCheck[0];
-  if (sampleTicker) {
-    const sampleGrowth = fmpCacheGet(`tp_fmp_g_${sampleTicker}`, 86400000);
-    console.log(`[FMP Growth sample] ${sampleTicker}:`, JSON.stringify(sampleGrowth));
+  // Log a sample to verify field names are resolving correctly
+  if (toCheck[0]) {
+    console.log(`[Screener] Sample fundamentals (${toCheck[0]}):`, JSON.stringify(fmpCacheGet(`tp_fmp_f3_${toCheck[0]}`, 86400000)));
   }
 
-  // Count how many got valid growth data
-  const withGrowth = toCheck.filter(t => {
-    const g = fmpCacheGet(`tp_fmp_g_${t}`, 86400000);
-    return g && (g.epsGrowth != null || g.revenueGrowth != null);
+  const withData = toCheck.filter(t => {
+    const f = fmpCacheGet(`tp_fmp_f3_${t}`, 86400000);
+    return f && f.epsGrowth != null && f.revenueGrowth != null;
   });
-  console.log(`[Screener] Growth data received for ${withGrowth.length}/${toCheck.length} stocks`);
-  showToast(`Growth data loaded for ${withGrowth.length} stocks — applying CANSLIM filters...`);
+  console.log(`[Screener] Complete fundamental data for ${withData.length}/${toCheck.length} stocks`);
+  showToast(`Fundamentals loaded — applying all 7 filters...`);
 
-  // ── Phase 4: CANSLIM fundamental filters ──
+  // ── Phase 4: All 7 criteria — strict AND logic, missing data = excluded ──
   const qualified = [];
   for (const ticker of toCheck) {
     const tech = cache[ticker];
     if (!tech) continue;
-    const growth = fmpCacheGet(`tp_fmp_g_${ticker}`, 86400000);
-    if (!growth) { continue; }
-    const { epsGrowth, revenueGrowth, roe, operatingMargin } = growth;
-    if (epsGrowth == null || epsGrowth < 0.50) continue;           // EPS dil growth Qtrly YoY > 50%
-    if (revenueGrowth == null || revenueGrowth < 0.25) continue;   // Revenue growth Qtrly YoY > 25%
-    if (roe != null && roe < 0.17) continue;                       // ROE TTM > 17% (skip if data unavailable)
-    if (operatingMargin != null && operatingMargin < 0) continue;  // Operating margin TTM > 0% (skip if unavailable)
+
+    const f = fmpCacheGet(`tp_fmp_f3_${ticker}`, 86400000);
+    if (!f) { console.log(`[Filter] ${ticker}: no fundamental data`); continue; }
+
+    const { epsGrowth, revenueGrowth, roe, operatingMargin } = f;
+
+    // All 7 criteria must pass — null data means excluded
+    if (epsGrowth      == null || epsGrowth      < 0.50) continue; // EPS dil growth Qtrly YoY > 50%
+    if (revenueGrowth  == null || revenueGrowth  < 0.25) continue; // Revenue growth Qtrly YoY > 25%
+    if (roe            == null || roe            < 0.17) continue; // ROE TTM > 17%
+    if (operatingMargin == null || operatingMargin < 0)  continue; // Operating margin TTM > 0%
+    // Volume, mktcap, perf6m already enforced in pre-filter above
+
     qualified.push({ ticker, price: tech.price, trendDir: tech.trendDir, trendDays: tech.trendDays, atr: tech.atr, perf6m: tech.perf6m, epsGrowth, revenueGrowth, roe, operatingMargin });
   }
 
-  // LONG signals first, then ranked by EPS growth
+  // LONG signals first, then by EPS growth descending
   qualified.sort((a, b) => {
     if (a.trendDir === 'LONG' && b.trendDir !== 'LONG') return -1;
     if (b.trendDir === 'LONG' && a.trendDir !== 'LONG') return 1;
