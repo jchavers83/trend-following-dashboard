@@ -835,25 +835,21 @@ async function runScreener() {
   }
   saveScreenCache(cache);
 
-  // Pre-filter: LONG trend + minimum liquidity (volume/mktCap)
-  // Deliberately NOT filtering on 6M perf here — that would eliminate stocks
-  // in recent breakouts or recovering from sector selloffs.
-  const longCandidates = candidates.filter(t => {
+  // Pre-filter: liquidity + size + 6M performance (no trend direction filter)
+  const preCandidates = candidates.filter(t => {
     const d = cache[t];
     if (!d) return false;
-    if (d.trendDir !== 'LONG') return false;
     if (d.avgVol > 0 && d.avgVol < 500000) return false;          // Avg Volume 30D > 500K
     if (d.marketCap > 0 && d.marketCap < 2e9) return false;       // Market cap > $2B
     if (d.perf6m < 20) return false;                               // Perf 6M > 20%
     return true;
   });
-  console.log(`[Screener] Pre-filter: ${longCandidates.length} LONG-trend liquid stocks`);
-  showToast(`${longCandidates.length} in LONG uptrend — fetching EPS/revenue growth...`);
+  console.log(`[Screener] Pre-filter: ${preCandidates.length} stocks pass size/volume/perf filters`);
+  showToast(`${preCandidates.length} stocks pass size filters — fetching EPS/revenue growth...`);
 
   // ── Phase 3: FMP EPS + revenue growth (cap at 150 per run) ──
-  // Prioritise most recently crossed so freshest signals get checked first
-  const toCheck = [...longCandidates]
-    .sort((a, b) => (cache[a]?.trendDays||999) - (cache[b]?.trendDays||999))
+  const toCheck = [...preCandidates]
+    .sort((a, b) => (cache[b]?.perf6m||0) - (cache[a]?.perf6m||0))  // strongest 6M momentum first
     .slice(0, 150);
 
   const batchSize2 = 5;
@@ -890,15 +886,15 @@ async function runScreener() {
     const { epsGrowth, revenueGrowth, roe, operatingMargin } = growth;
     if (epsGrowth == null || epsGrowth < 0.50) continue;           // EPS dil growth Qtrly YoY > 50%
     if (revenueGrowth == null || revenueGrowth < 0.25) continue;   // Revenue growth Qtrly YoY > 25%
-    if (roe == null || roe < 0.17) continue;                       // ROE TTM > 17%
-    if (operatingMargin == null || operatingMargin < 0) continue;  // Operating margin TTM > 0%
+    if (roe != null && roe < 0.17) continue;                       // ROE TTM > 17% (skip if data unavailable)
+    if (operatingMargin != null && operatingMargin < 0) continue;  // Operating margin TTM > 0% (skip if unavailable)
     qualified.push({ ticker, price: tech.price, trendDir: tech.trendDir, trendDays: tech.trendDays, atr: tech.atr, perf6m: tech.perf6m, epsGrowth, revenueGrowth, roe, operatingMargin });
   }
 
-  // New crosses first, then ranked by EPS growth
+  // LONG signals first, then ranked by EPS growth
   qualified.sort((a, b) => {
-    if (a.trendDays === 0 && b.trendDays !== 0) return -1;
-    if (b.trendDays === 0 && a.trendDays !== 0) return 1;
+    if (a.trendDir === 'LONG' && b.trendDir !== 'LONG') return -1;
+    if (b.trendDir === 'LONG' && a.trendDir !== 'LONG') return 1;
     return b.epsGrowth - a.epsGrowth;
   });
 
