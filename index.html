@@ -1835,16 +1835,9 @@ function renderDashboard() {
       ` : ''}
 
       <div class="section-header">
-        <h2>IBD Leaders (CANSLIM Screener)</h2>
-        <div style="display:flex;gap:8px;align-items:center">
-          <span class="count">${state.screenerResults.length} qualifying</span>
-          <button class="btn btn-sm btn-outline" onclick="runScreener()">
-            ${state.screenerRunning ? 'Running...' : 'Run Screener'}
-          </button>
-        </div>
+        <h2>Stock Market Leaders</h2>
       </div>
-      ${state.screenerRunning ? `<div class="screener-progress"><div class="fill" style="width:${state.screenerProgress}%"></div></div>` : ''}
-      ${state.screenerResults.length > 0 ? renderScreenerTable() : '<div style="color:var(--text3);padding:12px;font-size:13px">Run the screener to scan the full US market for CANSLIM-qualifying stocks.</div>'}
+      ${state.screenerResults.length > 0 ? renderScreenerTable() : '<div style="color:var(--text3);padding:12px;font-size:13px">Stock market leader screening coming soon via Interactive Brokers data.</div>'}
     </div>
   `;
 }
@@ -3406,10 +3399,7 @@ async function init() {
   // Load initial data (don't await - let UI render immediately while data loads)
   refreshAllTickers();
 
-  // Auto-run screener if no fresh cached results (slight delay so UI renders first)
-  if (state.screenerResults.length === 0) {
-    setTimeout(() => runScreener(), 1500);
-  }
+  // Screener auto-run disabled — will use IBKR data when connected
 
   // Auto-refresh every 10 minutes (includes IBKR sync)
   setInterval(() => {
