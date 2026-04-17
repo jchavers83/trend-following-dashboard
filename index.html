@@ -962,77 +962,117 @@ class ChartEngine {
 
   setupEvents() {
     const c = this.canvas;
-    // Hover
+    c.style.touchAction = 'none'; // prevent browser from intercepting touch gestures
+
+    // ── DESKTOP: Mouse drag to pan ──────────────────────────────
+    c.addEventListener('mousedown', e => {
+      this.isDragging = true;
+      this.dragStartX = e.clientX;
+      this.dragStartView = this.viewStart;
+      c.style.cursor = 'grabbing';
+    });
+    c.addEventListener('mouseup', () => { this.isDragging = false; c.style.cursor = 'crosshair'; });
+    c.addEventListener('mouseleave', () => { this.hoverIndex = -1; this.hoverY = -1; this.isDragging = false; c.style.cursor = 'crosshair'; this.draw(); });
     c.addEventListener('mousemove', e => {
       if (this.isDragging) { this.handleDrag(e); return; }
       const rect = c.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
-      const x = (e.clientX - rect.left) * dpr;
       this.hoverY = (e.clientY - rect.top) * dpr;
-      this.handleHover(x);
+      this.handleHover((e.clientX - rect.left) * dpr);
     });
-    c.addEventListener('mouseleave', () => { this.hoverIndex = -1; this.hoverY = -1; this.isDragging = false; this.draw(); });
-    // Touch hover
-    c.addEventListener('touchmove', e => {
-      if (e.touches.length === 1) {
-        e.preventDefault();
-        const rect = c.getBoundingClientRect();
-        const dpr = window.devicePixelRatio || 1;
-        const x = (e.touches[0].clientX - rect.left) * dpr;
-        this.hoverY = (e.touches[0].clientY - rect.top) * dpr;
-        this.handleHover(x);
-      }
-    }, {passive:false});
-    // Scroll to zoom
+
+    // ── DESKTOP: Scroll to zoom centered on cursor ───────────────
     c.addEventListener('wheel', e => {
       e.preventDefault();
       if (!this.data) return;
       const total = this.data.closes.length;
       const visibleBars = this.viewEnd - this.viewStart;
-      const zoomAmount = Math.max(1, Math.ceil(visibleBars * 0.015));
-      if (e.deltaY < 0) {
-        // Zoom in
-        if (visibleBars <= this.minBars) return;
-        this.viewStart = Math.min(this.viewStart + zoomAmount, this.viewEnd - this.minBars);
-        this.viewEnd = Math.max(this.viewEnd - zoomAmount, this.viewStart + this.minBars);
-      } else {
-        // Zoom out
-        this.viewStart = Math.max(0, this.viewStart - zoomAmount);
-        this.viewEnd = Math.min(total, this.viewEnd + zoomAmount);
-      }
+      // 12% zoom per scroll tick, centered on cursor position
+      const zoomFactor = e.deltaY < 0 ? 0.88 : 1.12;
+      const newVisible = Math.round(Math.max(this.minBars, Math.min(total, visibleBars * zoomFactor)));
+      const rect = c.getBoundingClientRect();
+      const relX = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      const focusBar = this.viewStart + relX * visibleBars;
+      let newStart = Math.round(focusBar - relX * newVisible);
+      newStart = Math.max(0, Math.min(newStart, total - newVisible));
+      this.viewStart = newStart;
+      this.viewEnd = Math.min(total, newStart + newVisible);
       this.draw();
-    }, {passive:false});
-    // Drag to pan
-    c.addEventListener('mousedown', e => {
-      this.isDragging = true;
-      this.dragStartX = e.clientX;
-      this.dragStartView = this.viewStart;
-    });
-    c.addEventListener('mouseup', () => { this.isDragging = false; });
-    // Pinch to zoom on mobile
-    let lastPinchDist = 0;
+    }, {passive: false});
+
+    // ── MOBILE: Unified touch handler ───────────────────────────
+    let touchStartX = 0, touchStartView = 0;
+    let lastPinchDist = 0, lastPinchMid = 0;
+    let isTouchPanning = false;
+
     c.addEventListener('touchstart', e => {
-      if (e.touches.length === 2) {
+      e.preventDefault();
+      if (e.touches.length === 1) {
+        touchStartX = e.touches[0].clientX;
+        touchStartView = this.viewStart;
+        isTouchPanning = false;
+      } else if (e.touches.length === 2) {
         const dx = e.touches[0].clientX - e.touches[1].clientX;
         const dy = e.touches[0].clientY - e.touches[1].clientY;
         lastPinchDist = Math.sqrt(dx*dx + dy*dy);
+        lastPinchMid = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        isTouchPanning = false;
       }
-    });
+    }, {passive: false});
+
     c.addEventListener('touchmove', e => {
-      if (e.touches.length === 2 && this.data) {
-        e.preventDefault();
+      e.preventDefault();
+      if (!this.data) return;
+      const total = this.data.closes.length;
+      const rect = c.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+
+      if (e.touches.length === 1) {
+        const dx = e.touches[0].clientX - touchStartX;
+        if (Math.abs(dx) > 4) isTouchPanning = true;
+
+        if (isTouchPanning) {
+          // Smooth pan: shift view by dragged pixels
+          const visibleBars = this.viewEnd - this.viewStart;
+          const pxPerBar = rect.width / visibleBars;
+          const barShift = Math.round(-dx / pxPerBar);
+          let newStart = Math.max(0, Math.min(touchStartView + barShift, total - visibleBars));
+          this.viewStart = newStart;
+          this.viewEnd = newStart + visibleBars;
+          this.hoverIndex = -1;
+        } else {
+          // Show crosshair while finger is still
+          const x = (e.touches[0].clientX - rect.left) * dpr;
+          this.hoverY = (e.touches[0].clientY - rect.top) * dpr;
+          this.handleHover(x);
+        }
+      } else if (e.touches.length === 2) {
+        // Pinch zoom centered on midpoint between fingers
         const dx = e.touches[0].clientX - e.touches[1].clientX;
         const dy = e.touches[0].clientY - e.touches[1].clientY;
         const dist = Math.sqrt(dx*dx + dy*dy);
-        const diff = dist - lastPinchDist;
+        const scale = dist / Math.max(lastPinchDist, 1);
         lastPinchDist = dist;
-        const total = this.data.closes.length;
-        const zoomAmt = Math.ceil(Math.abs(diff) * 0.3);
-        if (diff > 5) { this.viewStart = Math.min(this.viewStart+zoomAmt, this.viewEnd-this.minBars); this.viewEnd = Math.max(this.viewEnd-zoomAmt, this.viewStart+this.minBars); }
-        else if (diff < -5) { this.viewStart = Math.max(0, this.viewStart-zoomAmt); this.viewEnd = Math.min(total, this.viewEnd+zoomAmt); }
-        this.draw();
+        const visibleBars = this.viewEnd - this.viewStart;
+        const newVisible = Math.round(Math.max(this.minBars, Math.min(total, visibleBars / scale)));
+        const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        const relX = Math.max(0, Math.min(1, (midX - rect.left) / rect.width));
+        const focusBar = this.viewStart + relX * visibleBars;
+        let newStart = Math.round(focusBar - relX * newVisible);
+        newStart = Math.max(0, Math.min(newStart, total - newVisible));
+        this.viewStart = newStart;
+        this.viewEnd = Math.min(total, newStart + newVisible);
+        this.hoverIndex = -1;
       }
-    }, {passive:false});
+      this.draw();
+    }, {passive: false});
+
+    c.addEventListener('touchend', () => {
+      if (!isTouchPanning) { this.hoverIndex = -1; this.hoverY = -1; this.draw(); }
+      isTouchPanning = false;
+    });
+
+    c.style.cursor = 'crosshair';
   }
 
   handleDrag(e) {
