@@ -2529,15 +2529,14 @@ function drawEquityCurve() {
 
   const dpr = window.devicePixelRatio || 1;
   const w = canvas.offsetWidth || canvas.parentElement.offsetWidth || 600;
-  const h = 220;
+  const h = canvas.offsetHeight || 520;
   canvas.width = w * dpr;
   canvas.height = h * dpr;
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
 
   const isDark = state.darkMode;
-  const bgColor = isDark ? '#1e1e2e' : '#ffffff';
-  ctx.fillStyle = bgColor;
+  ctx.fillStyle = isDark ? '#1e1e2e' : '#ffffff';
   ctx.fillRect(0, 0, w, h);
 
   if (filtered.length < 1) {
@@ -2550,150 +2549,196 @@ function drawEquityCurve() {
   }
 
   const points = buildEquityPoints(filtered, startEquity);
-  const ddPoints = computeDrawdown(points);
 
-  const padTop = 18, padRight = 70, padBottom = 62, padLeft = 14;
-  const eqH = Math.floor((h - padTop - padBottom) * 0.72);
-  const ddH = h - padTop - padBottom - eqH - 6;
+  const padTop = 20, padRight = 72, padBottom = 32, padLeft = 14;
+  const plotH = h - padTop - padBottom;
   const plotW = w - padLeft - padRight;
 
-  // ── Equity section ──────────────────────────────────────────
   const equities = points.map(p => p.equity);
   const minEq = Math.min(...equities);
   const maxEq = Math.max(...equities);
-  const eqRange = maxEq - minEq || 1;
-  const finalEq = equities[equities.length-1];
+  // Add a little breathing room above and below the line
+  const padding = (maxEq - minEq) * 0.08 || startEquity * 0.01;
+  const lo = minEq - padding;
+  const hi = maxEq + padding;
+  const eqRange = hi - lo;
+
+  const finalEq = equities[equities.length - 1];
   const isUp = finalEq >= startEquity;
   const lineColor = isUp ? '#26a69a' : '#ef5350';
 
-  const toEqX = i => padLeft + (i / (points.length - 1 || 1)) * plotW;
-  const toEqY = v => padTop + eqH - ((v - minEq) / eqRange) * eqH;
+  const toX = i  => padLeft + (i / (points.length - 1 || 1)) * plotW;
+  const toY = v  => padTop  + plotH - ((v - lo) / eqRange) * plotH;
 
-  // Grid lines (4)
-  const gridSteps = 4;
-  ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  // ── Grid lines ──────────────────────────────────────────────
+  const gridSteps = 5;
   ctx.lineWidth = 1;
   for (let i = 0; i <= gridSteps; i++) {
-    const v = minEq + (eqRange / gridSteps) * i;
-    const y = toEqY(v);
-    ctx.beginPath();
-    ctx.moveTo(padLeft, y);
-    ctx.lineTo(padLeft + plotW, y);
-    ctx.stroke();
-    // right axis label
+    const v = lo + (eqRange / gridSteps) * i;
+    const y = toY(v);
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+    ctx.beginPath(); ctx.moveTo(padLeft, y); ctx.lineTo(padLeft + plotW, y); ctx.stroke();
     ctx.fillStyle = isDark ? '#6c7086' : '#9399b2';
     ctx.font = '10px Inter, system-ui';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText('$' + Math.round(v / 1000) + 'k', padLeft + plotW + 4, y);
+    ctx.fillText('$' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : Math.round(v)), padLeft + plotW + 5, y);
   }
 
-  // Area gradient
-  const grad = ctx.createLinearGradient(0, padTop, 0, padTop + eqH);
+  // Starting equity reference line (dashed)
+  const startY = toY(startEquity);
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.10)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(padLeft, startY); ctx.lineTo(padLeft + plotW, startY); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = isDark ? '#6c7086' : '#aaa';
+  ctx.font = '9px Inter, system-ui';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('Start $' + (startEquity/1000).toFixed(0) + 'k', padLeft + plotW + 5, startY);
+
+  // ── Area fill ───────────────────────────────────────────────
+  const grad = ctx.createLinearGradient(0, padTop, 0, padTop + plotH);
   if (isUp) {
-    grad.addColorStop(0, 'rgba(38,166,154,0.18)');
-    grad.addColorStop(1, 'rgba(38,166,154,0)');
+    grad.addColorStop(0, 'rgba(38,166,154,0.20)');
+    grad.addColorStop(1, 'rgba(38,166,154,0.02)');
   } else {
-    grad.addColorStop(0, 'rgba(239,83,80,0.12)');
-    grad.addColorStop(1, 'rgba(239,83,80,0)');
+    grad.addColorStop(0, 'rgba(239,83,80,0.14)');
+    grad.addColorStop(1, 'rgba(239,83,80,0.02)');
   }
   ctx.beginPath();
-  ctx.moveTo(toEqX(0), toEqY(points[0].equity));
-  points.forEach((p,i) => { if (i>0) ctx.lineTo(toEqX(i), toEqY(p.equity)); });
-  ctx.lineTo(toEqX(points.length-1), padTop+eqH);
-  ctx.lineTo(toEqX(0), padTop+eqH);
+  ctx.moveTo(toX(0), toY(points[0].equity));
+  points.forEach((p,i) => { if (i>0) ctx.lineTo(toX(i), toY(p.equity)); });
+  ctx.lineTo(toX(points.length-1), padTop + plotH);
+  ctx.lineTo(toX(0), padTop + plotH);
   ctx.closePath();
   ctx.fillStyle = grad;
   ctx.fill();
 
-  // Equity line
+  // ── Equity line ─────────────────────────────────────────────
   ctx.beginPath();
-  ctx.moveTo(toEqX(0), toEqY(points[0].equity));
-  points.forEach((p,i) => { if (i>0) ctx.lineTo(toEqX(i), toEqY(p.equity)); });
+  ctx.moveTo(toX(0), toY(points[0].equity));
+  points.forEach((p,i) => { if (i>0) ctx.lineTo(toX(i), toY(p.equity)); });
   ctx.strokeStyle = lineColor;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
   ctx.stroke();
 
-  // ── Drawdown section ────────────────────────────────────────
-  const ddTop = padTop + eqH + 8;
-  const maxDD = Math.max(...ddPoints.map(p=>p.dd), 0.01);
-  const toDDX = i => padLeft + (i / (ddPoints.length - 1 || 1)) * plotW;
-  const toDDY = v => ddTop + ddH - (v / maxDD) * ddH;
-
-  ctx.fillStyle = 'rgba(239,83,80,0.25)';
+  // Final dot
+  const lastX = toX(points.length - 1);
+  const lastY = toY(finalEq);
   ctx.beginPath();
-  ctx.moveTo(toDDX(0), toDDY(0));
-  ddPoints.forEach((p,i) => { if (i>0) ctx.lineTo(toDDX(i), toDDY(p.dd)); });
-  ctx.lineTo(toDDX(ddPoints.length-1), ddTop+ddH);
-  ctx.lineTo(toDDX(0), ddTop+ddH);
-  ctx.closePath();
+  ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
+  ctx.fillStyle = lineColor;
   ctx.fill();
 
-  // Drawdown label
-  ctx.fillStyle = isDark ? '#6c7086' : '#9399b2';
-  ctx.font = '9px Inter, system-ui';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'top';
-  ctx.fillText('DRAWDOWN', padLeft, ddTop + 2);
-  ctx.textAlign = 'left';
-  ctx.fillStyle = '#ef5350';
-  ctx.fillText('Max: -' + maxDD.toFixed(1) + '%', padLeft + plotW + 4, ddTop + 2);
-
-  // X-axis date labels (sparse)
-  const labelEvery = Math.max(1, Math.floor(points.length / 5));
+  // ── X-axis date labels ──────────────────────────────────────
+  const labelEvery = Math.max(1, Math.floor(points.length / 6));
   ctx.fillStyle = isDark ? '#6c7086' : '#9399b2';
   ctx.font = '10px Inter, system-ui';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  const xAxisY = ddTop + ddH + 4;
   for (let i = 0; i < points.length; i += labelEvery) {
     if (!points[i].date) continue;
-    const lbl = points[i].date.slice(5); // MM-DD
-    ctx.fillText(lbl, toEqX(i), xAxisY);
+    const d = new Date(points[i].date + 'T12:00:00');
+    const lbl = (d.getMonth()+1) + '/' + d.getDate() + '/' + String(d.getFullYear()).slice(2);
+    ctx.fillText(lbl, toX(i), padTop + plotH + 6);
+  }
+  // Always label the last point
+  if (points[points.length-1].date) {
+    const d = new Date(points[points.length-1].date + 'T12:00:00');
+    const lbl = (d.getMonth()+1) + '/' + d.getDate() + '/' + String(d.getFullYear()).slice(2);
+    ctx.fillText(lbl, toX(points.length-1), padTop + plotH + 6);
   }
 
-  // ── Hover crosshair state ──────────────────────────────────
-  canvas._eqPoints = points;
-  canvas._ddPoints = ddPoints;
-  canvas._toEqX = toEqX;
-  canvas._toEqY = toEqY;
-  canvas._padTop = padTop;
-  canvas._eqH = eqH;
-  canvas._plotW = plotW;
-  canvas._padLeft = padLeft;
+  // ── Store state for hover ────────────────────────────────────
+  canvas._eqPoints  = points;
+  canvas._startEq   = startEquity;
+  canvas._toX       = toX;
+  canvas._toY       = toY;
+  canvas._padTop    = padTop;
+  canvas._plotH     = plotH;
+  canvas._plotW     = plotW;
+  canvas._padLeft   = padLeft;
 }
 
 function setupEquityHover() {
   const canvas = document.getElementById('canvasEquityCurve');
   if (!canvas) return;
   const tooltip = document.getElementById('tooltipEquity');
+
   canvas.addEventListener('mousemove', function(e) {
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left;
-    const points = canvas._eqPoints;
-    const ddPoints = canvas._ddPoints;
-    const toEqX = canvas._toEqX;
-    const toEqY = canvas._toEqY;
+    const my = e.clientY - rect.top;
+    const points   = canvas._eqPoints;
+    const startEq  = canvas._startEq;
+    const toX      = canvas._toX;
+    const toY      = canvas._toY;
     if (!points || points.length < 2) return;
 
-    const w = rect.width;
-    const plotW = canvas._plotW;
+    const plotW  = canvas._plotW;
     const padLeft = canvas._padLeft;
-    const idx = Math.max(0, Math.min(points.length-1, Math.round((mx - padLeft) / (plotW/(points.length-1)))));
+    const idx = Math.max(0, Math.min(points.length - 1,
+      Math.round((mx - padLeft) / (plotW / (points.length - 1)))));
     const p = points[idx];
-    const dd = ddPoints[idx];
     if (!p) return;
 
+    // Draw crosshair on canvas
+    const ctx = canvas.getContext('2d');
+    // Re-draw only the crosshair — cheap because canvas already rendered
+    drawEquityCurve();
+    const cx = toX(idx);
+    const cy = toY(p.equity);
+    ctx.save();
+    ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = 'rgba(150,150,150,0.4)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx, canvas._padTop); ctx.lineTo(cx, canvas._padTop + canvas._plotH); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+    ctx.fillStyle = p.equity >= startEq ? '#26a69a' : '#ef5350';
+    ctx.fill();
+    ctx.restore();
+
     if (tooltip) {
-      const sign = p.pnl >= 0 ? '+' : '';
-      tooltip.style.left = Math.min(mx + 12, w - 130) + 'px';
-      tooltip.style.top = (canvas._padTop) + 'px';
+      const totalGain = p.equity - startEq;
+      const totalPct  = startEq > 0 ? (totalGain / startEq) * 100 : 0;
+      const gainColor = totalGain >= 0 ? '#26a69a' : '#ef5350';
+      const sign      = totalGain >= 0 ? '+' : '';
+
+      // Format date
+      let dateLabel = 'Start';
+      if (p.date) {
+        const d = new Date(p.date + 'T12:00:00');
+        dateLabel = (d.getMonth()+1) + '/' + d.getDate() + '/' + String(d.getFullYear()).slice(2);
+      }
+
+      tooltip.style.left  = Math.min(mx + 14, rect.width - 155) + 'px';
+      tooltip.style.top   = Math.max(canvas._padTop, my - 60) + 'px';
       tooltip.style.display = 'block';
-      tooltip.innerHTML = `<div style="font-size:11px;color:var(--text3)">${p.date||'Start'}</div><div style="font-weight:700;font-family:var(--mono)">$${p.equity.toLocaleString('en-US',{maximumFractionDigits:0})}</div><div style="font-size:11px;color:${p.pnl>=0?'#26a69a':'#ef5350'}">${sign}$${fmt(Math.abs(p.pnl||0))}</div><div style="font-size:11px;color:#ef5350">DD: -${(dd?.dd||0).toFixed(1)}%</div>`;
+      tooltip.innerHTML = `
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px">${dateLabel}</div>
+        <div style="display:flex;justify-content:space-between;gap:16px;margin-bottom:2px">
+          <span style="font-size:11px;color:var(--text3)">Started</span>
+          <span style="font-family:var(--mono);font-weight:600">$${startEq.toLocaleString('en-US',{maximumFractionDigits:0})}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;gap:16px;margin-bottom:2px">
+          <span style="font-size:11px;color:var(--text3)">Value</span>
+          <span style="font-family:var(--mono);font-weight:700">$${p.equity.toLocaleString('en-US',{maximumFractionDigits:0})}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;gap:16px;border-top:1px solid var(--card-border);margin-top:4px;padding-top:4px">
+          <span style="font-size:11px;color:var(--text3)">Total gain</span>
+          <span style="font-family:var(--mono);font-weight:700;color:${gainColor}">${sign}$${Math.abs(totalGain).toLocaleString('en-US',{maximumFractionDigits:0})} (${sign}${totalPct.toFixed(1)}%)</span>
+        </div>`;
     }
   });
+
   canvas.addEventListener('mouseleave', function() {
     if (tooltip) tooltip.style.display = 'none';
+    drawEquityCurve(); // restore clean canvas
   });
 }
 
