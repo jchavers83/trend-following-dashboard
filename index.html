@@ -945,7 +945,7 @@ class ChartEngine {
   constructor(canvas) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
-    this.padding = {top:20,right:80,bottom:40,left:10};
+    this.padding = {top:20,right:80,bottom:44,left:10};
     this.data = null;
     this.overlays = [];
     this.hoverIndex = -1;
@@ -957,6 +957,15 @@ class ChartEngine {
     this.isDragging = false;
     this.dragStartX = 0;
     this.dragStartView = 0;
+    // Chart theme: dark or light
+    this.chartDark = true;
+    // Price-axis vertical drag (scale candle height)
+    this.isPriceAxisDrag = false;
+    this.priceAxisDragStartY = 0;
+    this.priceAxisDragStartZoom = 1.0;
+    this.priceZoom = 1.0; // >1 = zoomed in (taller candles), <1 = compressed
+    // Extra empty bars to the right of last candle
+    this.rightPad = 30;
     this.setupEvents();
   }
 
@@ -964,18 +973,52 @@ class ChartEngine {
     const c = this.canvas;
     c.style.touchAction = 'none'; // prevent browser from intercepting touch gestures
 
-    // ── DESKTOP: Mouse drag to pan ──────────────────────────────
+    // ── DESKTOP: Mouse drag to pan + price-axis drag ────────────
     c.addEventListener('mousedown', e => {
+      const rect = c.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const pad = this.padding;
+      const plotW = rect.width - pad.left - pad.right;
+      // Right axis zone: last 80px
+      if (x > pad.left + plotW) {
+        this.isPriceAxisDrag = true;
+        this.priceAxisDragStartY = e.clientY;
+        this.priceAxisDragStartZoom = this.priceZoom;
+        c.style.cursor = 'ns-resize';
+        return;
+      }
       this.isDragging = true;
       this.dragStartX = e.clientX;
       this.dragStartView = this.viewStart;
       c.style.cursor = 'grabbing';
     });
-    c.addEventListener('mouseup', () => { this.isDragging = false; c.style.cursor = 'crosshair'; });
-    c.addEventListener('mouseleave', () => { this.hoverIndex = -1; this.hoverY = -1; this.isDragging = false; c.style.cursor = 'crosshair'; this.draw(); });
+    c.addEventListener('mouseup', () => {
+      this.isDragging = false;
+      this.isPriceAxisDrag = false;
+      c.style.cursor = 'crosshair';
+    });
+    c.addEventListener('mouseleave', () => {
+      this.hoverIndex = -1; this.hoverY = -1;
+      this.isDragging = false; this.isPriceAxisDrag = false;
+      c.style.cursor = 'crosshair'; this.draw();
+    });
     c.addEventListener('mousemove', e => {
+      // Price axis drag: up = zoom in (taller candles), down = zoom out
+      if (this.isPriceAxisDrag) {
+        const dy = e.clientY - this.priceAxisDragStartY;
+        const scale = Math.exp(-dy / 150);
+        this.priceZoom = Math.max(0.3, Math.min(8, this.priceAxisDragStartZoom * scale));
+        this.draw();
+        return;
+      }
       if (this.isDragging) { this.handleDrag(e); return; }
       const rect = c.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const pad = this.padding;
+      const plotW = rect.width - pad.left - pad.right;
+      // Show ns-resize cursor when hovering over right price axis
+      if (x > pad.left + plotW) { c.style.cursor = 'ns-resize'; return; }
+      c.style.cursor = 'crosshair';
       const dpr = window.devicePixelRatio || 1;
       this.hoverY = (e.clientY - rect.top) * dpr;
       this.handleHover((e.clientX - rect.left) * dpr);
@@ -987,16 +1030,17 @@ class ChartEngine {
       if (!this.data) return;
       const total = this.data.closes.length;
       const visibleBars = this.viewEnd - this.viewStart;
-      // 12% zoom per scroll tick, centered on cursor position
-      const zoomFactor = e.deltaY < 0 ? 0.88 : 1.12;
-      const newVisible = Math.round(Math.max(this.minBars, Math.min(total, visibleBars * zoomFactor)));
+      // 5% zoom per scroll tick — subtle, not jarring
+      const zoomFactor = e.deltaY < 0 ? 0.95 : 1.05;
+      const maxBars = total + this.rightPad;
+      const newVisible = Math.round(Math.max(this.minBars, Math.min(maxBars, visibleBars * zoomFactor)));
       const rect = c.getBoundingClientRect();
       const relX = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
       const focusBar = this.viewStart + relX * visibleBars;
       let newStart = Math.round(focusBar - relX * newVisible);
-      newStart = Math.max(0, Math.min(newStart, total - newVisible));
+      newStart = Math.max(0, Math.min(newStart, maxBars - newVisible));
       this.viewStart = newStart;
-      this.viewEnd = Math.min(total, newStart + newVisible);
+      this.viewEnd = newStart + newVisible;
       this.draw();
     }, {passive: false});
 
@@ -1036,7 +1080,8 @@ class ChartEngine {
           const visibleBars = this.viewEnd - this.viewStart;
           const pxPerBar = rect.width / visibleBars;
           const barShift = Math.round(-dx / pxPerBar);
-          let newStart = Math.max(0, Math.min(touchStartView + barShift, total - visibleBars));
+          const maxBars = total + this.rightPad;
+          let newStart = Math.max(0, Math.min(touchStartView + barShift, maxBars - visibleBars));
           this.viewStart = newStart;
           this.viewEnd = newStart + visibleBars;
           this.hoverIndex = -1;
@@ -1054,14 +1099,15 @@ class ChartEngine {
         const scale = dist / Math.max(lastPinchDist, 1);
         lastPinchDist = dist;
         const visibleBars = this.viewEnd - this.viewStart;
-        const newVisible = Math.round(Math.max(this.minBars, Math.min(total, visibleBars / scale)));
+        const maxBars = total + this.rightPad;
+        const newVisible = Math.round(Math.max(this.minBars, Math.min(maxBars, visibleBars / scale)));
         const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
         const relX = Math.max(0, Math.min(1, (midX - rect.left) / rect.width));
         const focusBar = this.viewStart + relX * visibleBars;
         let newStart = Math.round(focusBar - relX * newVisible);
-        newStart = Math.max(0, Math.min(newStart, total - newVisible));
+        newStart = Math.max(0, Math.min(newStart, maxBars - newVisible));
         this.viewStart = newStart;
-        this.viewEnd = Math.min(total, newStart + newVisible);
+        this.viewEnd = newStart + newVisible;
         this.hoverIndex = -1;
       }
       this.draw();
@@ -1083,9 +1129,9 @@ class ChartEngine {
     const pxPerBar = plotW / visibleBars;
     const dx = e.clientX - this.dragStartX;
     const barShift = Math.round(-dx / pxPerBar);
-    const total = this.data.closes.length;
+    const maxBars = this.data.closes.length + this.rightPad;
     let newStart = this.dragStartView + barShift;
-    newStart = Math.max(0, Math.min(newStart, total - visibleBars));
+    newStart = Math.max(0, Math.min(newStart, maxBars - visibleBars));
     this.viewStart = newStart;
     this.viewEnd = newStart + visibleBars;
     this.draw();
@@ -1129,12 +1175,11 @@ class ChartEngine {
     ctx.scale(dpr, dpr);
 
     const w = rect.width, h = rect.height;
-    // Chart canvas is always dark — colors pop, washes out on white
-    const bgColor    = '#131722';
-    const gridColor  = 'rgba(255,255,255,0.04)';
-    const textColor  = 'rgba(148,158,178,0.7)';
-    const priceColor = '#c9d1d9';
-    const isDark     = true; // always dark inside canvas
+    const isDark = this.chartDark;
+    const bgColor    = isDark ? '#131722' : '#ffffff';
+    const gridColor  = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.07)';
+    const textColor  = isDark ? 'rgba(148,158,178,0.7)' : 'rgba(60,70,95,0.65)';
+    const priceColor = isDark ? '#c9d1d9' : '#1e2033';
 
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, w, h);
@@ -1154,30 +1199,31 @@ class ChartEngine {
     const plotH = h - pad.top - pad.bottom;
     const vs = this.viewStart, ve = this.viewEnd;
     const visibleBars = ve - vs;
+    const total = closes.length;
 
-    // Reserve bottom 18% for volume bars, 6px gap
-    const volAreaH   = Math.floor(plotH * 0.18);
-    const priceAreaH = plotH - volAreaH - 6;
-
-    // Find price range for visible portion only
+    // Find price range for visible data bars only
     let minP = Infinity, maxP = -Infinity;
     const {opens: dOpens, highs: dHighs, lows: dLows} = this.data;
-    for (let i = vs; i < ve; i++) {
+    for (let i = vs; i < Math.min(ve, total); i++) {
       if (dHighs && dHighs[i] != null) maxP = Math.max(maxP, dHighs[i]);
       if (dLows && dLows[i] != null) minP = Math.min(minP, dLows[i]);
       if (closes[i] != null) { minP = Math.min(minP, closes[i]); maxP = Math.max(maxP, closes[i]); }
       if (ma10Arr && ma10Arr[i] != null) { minP = Math.min(minP, ma10Arr[i]); maxP = Math.max(maxP, ma10Arr[i]); }
       if (ma20Arr && ma20Arr[i] != null) { minP = Math.min(minP, ma20Arr[i]); maxP = Math.max(maxP, ma20Arr[i]); }
     }
+    if (minP === Infinity) { minP = 0; maxP = 100; }
     this.overlays.forEach(o => { minP = Math.min(minP, o.price); maxP = Math.max(maxP, o.price); });
-    const range = maxP - minP || 1;
-    minP -= range * 0.05;
-    maxP += range * 0.05;
+    const rawRange = maxP - minP || 1;
+    // Apply priceZoom: >1 zooms in (taller candles), center on midpoint
+    const center = (maxP + minP) / 2;
+    const scaledHalf = (rawRange * 0.55) / this.priceZoom; // 0.55 gives 10% padding each side by default
+    minP = center - scaledHalf;
+    maxP = center + scaledHalf;
     const priceRange = maxP - minP;
 
-    // Map data index → canvas coordinates
-    const toX = i => plotX + ((i - vs) / (visibleBars - 1)) * plotW;
-    const toY = p => plotY + (1 - (p - minP) / priceRange) * priceAreaH;
+    // Map data index → canvas coordinates (full plotH, no volume area)
+    const toX = i => plotX + ((i - vs) / Math.max(visibleBars - 1, 1)) * plotW;
+    const toY = p => plotY + (1 - (p - minP) / priceRange) * plotH;
 
     // Grid lines
     ctx.strokeStyle = gridColor;
@@ -1191,6 +1237,26 @@ class ChartEngine {
       ctx.font = '11px SF Mono, monospace';
       ctx.textAlign = 'right';
       ctx.fillText(price.toFixed(2), w - 4, y + 4);
+    }
+
+    // Shade future area (right of last bar) with subtle overlay
+    if (ve > total) {
+      const futureStartX = toX(total - 1) + (plotW / Math.max(visibleBars - 1, 1)) * 0.5;
+      ctx.fillStyle = isDark ? 'rgba(255,255,255,0.015)' : 'rgba(0,0,0,0.025)';
+      ctx.fillRect(futureStartX, plotY, plotX + plotW - futureStartX, plotH);
+      // Dashed "now" divider
+      ctx.beginPath();
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = isDark ? 'rgba(137,180,250,0.25)' : 'rgba(80,110,200,0.2)';
+      ctx.lineWidth = 1;
+      ctx.moveTo(futureStartX, plotY);
+      ctx.lineTo(futureStartX, plotY + plotH);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = isDark ? 'rgba(137,180,250,0.4)' : 'rgba(80,110,200,0.4)';
+      ctx.font = '9px system-ui';
+      ctx.textAlign = 'left';
+      ctx.fillText('NOW', futureStartX + 4, plotY + 12);
     }
 
     // Date labels (visible range only)
@@ -1267,25 +1333,7 @@ class ChartEngine {
       ctx.stroke();
     }
 
-    // ── Volume histogram ────────────────────────────────────────
-    const vols = this.data.volumes;
-    if (vols && vols.length > 0) {
-      let maxVol = 0;
-      for (let i = vs; i < ve; i++) if (vols[i]) maxVol = Math.max(maxVol, vols[i]);
-      if (maxVol > 0) {
-        const volBaseY = plotY + plotH;
-        const volMaxH  = volAreaH * 0.9;
-        const {opens, closes: cls} = this.data;
-        for (let i = vs; i < ve; i++) {
-          if (!vols[i]) continue;
-          const x    = toX(i);
-          const barH = (vols[i] / maxVol) * volMaxH;
-          const isBullVol = cls[i] >= (opens ? opens[i] : cls[i]);
-          ctx.fillStyle = isBullVol ? 'rgba(38,198,176,0.2)' : 'rgba(239,83,80,0.2)';
-          ctx.fillRect(x - candleW / 2, volBaseY - barH, candleW, barH);
-        }
-      }
-    }
+    // (Volume histogram removed — not displayed)
 
     // MA10 line
     if (ma10Arr) {
@@ -1313,6 +1361,62 @@ class ChartEngine {
         else ctx.lineTo(toX(i), toY(ma20Arr[i]));
       }
       ctx.stroke();
+    }
+
+    // ── Earnings markers ─────────────────────────────────────────
+    const earnings = this.data.earnings;
+    if (earnings && earnings.length > 0 && timestamps && timestamps.length > 0) {
+      const lastTs = timestamps[total - 1];
+      const firstTs = timestamps[0];
+      // Average interval in seconds between bars
+      const avgInterval = total > 1 ? (lastTs - firstTs) / (total - 1) : 86400;
+      ctx.font = 'bold 9px system-ui';
+      ctx.textAlign = 'center';
+      for (const e of earnings) {
+        let barIdx;
+        if (e.isFuture) {
+          // Extrapolate past end of data
+          barIdx = total - 1 + Math.round((e.timestamp - lastTs) / avgInterval);
+        } else {
+          // Find nearest historical bar
+          let best = 0, bestDist = Infinity;
+          for (let i = 0; i < total; i++) {
+            const d = Math.abs(timestamps[i] - e.timestamp);
+            if (d < bestDist) { bestDist = d; best = i; }
+          }
+          barIdx = best;
+        }
+        if (barIdx < vs || barIdx >= ve) continue;
+        const ex = toX(barIdx);
+        if (e.isFuture) {
+          // Future earnings: dashed vertical line + amber E
+          ctx.save();
+          ctx.beginPath();
+          ctx.setLineDash([3, 3]);
+          ctx.strokeStyle = 'rgba(249,226,175,0.5)';
+          ctx.lineWidth = 1;
+          ctx.moveTo(ex, plotY);
+          ctx.lineTo(ex, plotY + plotH);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.restore();
+          // E badge (amber, future)
+          ctx.fillStyle = '#f9e2af';
+          ctx.beginPath();
+          ctx.roundRect(ex - 7, plotY + plotH + 2, 14, 13, 2);
+          ctx.fill();
+          ctx.fillStyle = '#1e1e2e';
+          ctx.fillText('E', ex, plotY + plotH + 12);
+        } else {
+          // Past earnings: simple E marker on x-axis
+          ctx.fillStyle = isDark ? 'rgba(148,226,213,0.85)' : 'rgba(32,160,140,0.85)';
+          ctx.beginPath();
+          ctx.roundRect(ex - 6, plotY + plotH + 2, 12, 12, 2);
+          ctx.fill();
+          ctx.fillStyle = isDark ? '#131722' : '#ffffff';
+          ctx.fillText('E', ex, plotY + plotH + 11);
+        }
+      }
     }
 
     // Crossover markers (only visible ones)
@@ -1699,6 +1803,43 @@ function addCustomTicker(ticker) {
   }
 }
 
+// ─── EARNINGS FETCH ───
+async function fetchEarnings(ticker) {
+  const cacheKey = `tp_earnings_${ticker}`;
+  const cached = fmpCacheGet(cacheKey, 86400000); // 24h cache
+  if (cached) return cached;
+  try {
+    const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${ticker}?modules=calendarEvents,earningsHistory`;
+    const data = await fetchYahoo(url);
+    const result = data?.quoteSummary?.result?.[0];
+    const earnings = [];
+    // Future earnings date(s) from calendarEvents
+    const cal = result?.calendarEvents?.earnings;
+    if (cal?.earningsDate?.length > 0) {
+      for (const e of cal.earningsDate) {
+        if (e.raw) earnings.push({ timestamp: e.raw, isFuture: true });
+      }
+    }
+    // Past earnings dates from earningsHistory
+    const hist = result?.earningsHistory?.history;
+    if (hist) {
+      for (const e of hist) {
+        if (e.quarter?.raw) earnings.push({ timestamp: e.quarter.raw, isFuture: false });
+      }
+    }
+    fmpCacheSet(cacheKey, earnings);
+    return earnings;
+  } catch (_) { return []; }
+}
+
+function toggleChartTheme() {
+  if (!chartEngine) return;
+  chartEngine.chartDark = !chartEngine.chartDark;
+  const btn = document.getElementById('chartThemeToggle');
+  if (btn) btn.textContent = chartEngine.chartDark ? '☀ Light' : '🌙 Dark';
+  chartEngine.draw();
+}
+
 // ─── CHART SCREEN ───
 let chartEngine = null;
 
@@ -1741,6 +1882,8 @@ function renderChartScreen() {
           <div class="legend-item"><div class="legend-dot" style="background:#ef5350"></div>Bearish</div>
           <div class="legend-item"><div class="legend-dot" style="background:#89b4fa"></div>MA10</div>
           <div class="legend-item"><div class="legend-dot" style="background:#94e2d5"></div>MA20</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#f9e2af;width:14px;height:14px;border-radius:3px;font-size:8px;line-height:14px;text-align:center;color:#1e1e2e;font-weight:800">E</div>Earnings</div>
+          <button id="chartThemeToggle" onclick="toggleChartTheme()" style="margin-left:auto;background:none;border:1px solid var(--card-border);border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;color:var(--text2);font-family:var(--sans)">☀ Light</button>
         </div>
       </div>
 
@@ -1761,11 +1904,18 @@ function renderChartScreen() {
         highs: d.highs,
         lows: d.lows,
         closes: d.closes,
-        volumes: d.volumes,
         timestamps: d.timestamps,
         ma10Arr: d.ma10Arr,
         ma20Arr: d.ma20Arr,
-        crosses: d.crosses
+        crosses: d.crosses,
+        earnings: []
+      });
+      // Fetch earnings async and update chart
+      fetchEarnings(ticker).then(earningsData => {
+        if (chartEngine && chartEngine.data) {
+          chartEngine.data.earnings = earningsData;
+          chartEngine.draw();
+        }
       });
 
       // Add trade overlays
