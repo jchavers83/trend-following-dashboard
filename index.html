@@ -149,18 +149,25 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;
 .section-header .count{font-size:12px;color:var(--text3);font-family:var(--mono)}
 
 /* Chart Screen */
-.chart-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
-.chart-header .back-btn{width:36px;height:36px;border-radius:var(--radius-sm);border:1px solid var(--card-border);background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);flex-shrink:0}
-.chart-header .chart-ticker{font-size:24px;font-weight:800;font-family:var(--mono)}
-.chart-header .chart-name{font-size:13px;color:var(--text3)}
-.chart-header .chart-price{font-size:28px;font-weight:700;font-family:var(--mono);margin-left:auto}
-.chart-container{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:16px}
-.chart-canvas-wrap{position:relative;width:100%;height:500px}
+.chart-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;min-height:44px}
+.chart-header .back-btn{width:32px;height:32px;border-radius:var(--radius-sm);border:1px solid var(--card-border);background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);flex-shrink:0}
+.chart-ticker-block{display:flex;flex-direction:column;flex-shrink:0}
+.chart-ticker-block .chart-ticker{font-size:18px;font-weight:800;font-family:var(--mono);line-height:1.1}
+.chart-ticker-block .chart-name{font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
+.chart-stats{display:flex;gap:14px;align-items:center;flex-wrap:wrap;flex:1;padding:0 4px}
+.chart-stat{display:flex;flex-direction:column;align-items:flex-start;gap:1px}
+.chart-stat .cs-label{font-size:9px;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);font-weight:500;line-height:1}
+.chart-stat .cs-val{font-size:12px;font-weight:600;font-family:var(--mono);line-height:1.2}
+.chart-price-block{margin-left:auto;text-align:right;flex-shrink:0}
+.chart-price-block .chart-price{font-size:18px;font-weight:700;font-family:var(--mono);line-height:1.1}
+.chart-price-block .chart-day-chg{font-size:11px;font-weight:500}
+.chart-container{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:12px;box-shadow:var(--shadow);margin-bottom:10px}
+.chart-canvas-wrap{position:relative;width:100%;height:580px}
 .chart-canvas-wrap canvas{width:100%;height:100%}
-.chart-legend{display:flex;gap:16px;margin-top:10px;font-size:12px}
-.chart-legend .legend-item{display:flex;align-items:center;gap:5px}
+.chart-legend{display:flex;gap:12px;margin-top:8px;font-size:11px;align-items:center}
+.chart-legend .legend-item{display:flex;align-items:center;gap:4px}
 .chart-legend .legend-dot{width:10px;height:3px;border-radius:2px}
-.chart-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chart-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
 .chart-info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
 .chart-info-card{background:var(--card);border:1px solid var(--card-border);border-left:3px solid var(--card-border);border-radius:var(--radius-sm);padding:8px 12px}
 .chart-info-card .label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;font-weight:500}
@@ -317,9 +324,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;
   .content{padding:14px}
   .summary-row{grid-template-columns:1fr 1fr}
   .signal-grid{grid-template-columns:1fr}
-  .chart-canvas-wrap{height:360px}
-  .chart-header .chart-price{margin-left:0;margin-top:4px}
-  .chart-header{flex-direction:column;align-items:flex-start}
+  .chart-canvas-wrap{height:420px}
+  .chart-stats{gap:10px}
+  .chart-header{flex-wrap:wrap}
   .calc-outputs{grid-template-columns:1fr}
   .journal-summary{grid-template-columns:1fr 1fr}
   .trade-card .trade-stats{grid-template-columns:1fr 1fr}
@@ -1141,11 +1148,10 @@ class ChartEngine {
     newStart = Math.max(0, Math.min(newStart, maxBars - visibleBars));
     this.viewStart = newStart;
     this.viewEnd = newStart + visibleBars;
-    // Vertical pan: drag down → see higher prices (grab-and-pull metaphor)
+    // Vertical pan: drag down → chart content moves down → see higher prices
     const dy = e.clientY - this.dragStartY;
-    // Estimate priceRange from current zoom (approximation)
     const approxRange = this._lastPriceRange || 1;
-    this.pricePan = this.dragStartPan - (dy / plotH) * approxRange;
+    this.pricePan = this.dragStartPan + (dy / plotH) * approxRange;
     this.draw();
   }
 
@@ -1401,8 +1407,9 @@ class ChartEngine {
           }
           barIdx = best;
         }
-        if (barIdx < vs || barIdx >= ve) continue;
+        // Use x-position to check visibility instead of barIdx (allows future bars in right-pad area)
         const ex = toX(barIdx);
+        if (ex < plotX || ex > plotX + plotW) continue;
         if (e.isFuture) {
           // Future earnings: dashed vertical line + amber E
           ctx.save();
@@ -1854,6 +1861,7 @@ function addCustomTicker(ticker) {
 
 // ─── EARNINGS FETCH ───
 async function fetchEarnings(ticker) {
+  if (!ticker) return []; // ETF or no-op
   const cacheKey = `tp_earnings_${ticker}`;
   const cached = fmpCacheGet(cacheKey, 86400000); // 24h cache
   if (cached) return cached;
@@ -1903,41 +1911,58 @@ function renderChartScreen() {
   const pk = getProfileKey();
   const trade = (profiles[pk].trades || []).find(t => t.ticker === ticker);
 
+  const chgColor = d && d.changePct >= 0 ? '#26a69a' : '#ef5350';
+  const chgSign  = d && d.changePct >= 0 ? '+' : '';
+  const tradeUnrealPnl = trade && d ? ((d.price - trade.entryPrice) / (d.atr || 1)).toFixed(2) : null;
+  const tradeColor = tradeUnrealPnl != null ? (parseFloat(tradeUnrealPnl) >= 0 ? '#26a69a' : '#ef5350') : '';
+
   content.innerHTML = `
     <div class="screen active">
       <div class="chart-header">
         <button class="back-btn" onclick="navigateTo('dashboard')">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
         </button>
-        <div>
-          <div class="chart-ticker">${ticker}</div>
-          <div class="chart-name">${d ? d.name || '' : ''}</div>
+        <div class="chart-ticker-block">
+          <span class="chart-ticker">${ticker}</span>
+          <span class="chart-name">${d ? d.name || '' : ''}</span>
         </div>
-        <div class="chart-price">${d ? '$' + fmt(d.price) : '...'}</div>
-      </div>
-
-      <div class="chart-info-grid">
-        <div class="chart-info-card" style="border-left-color:${d&&d.signal==='LONG'?'#26c6b0':d&&d.signal==='SHORT'?'#ef5350':'#585b70'}"><div class="label">Signal</div><div class="val"><span class="signal-badge ${d?d.signal.toLowerCase():'neutral'}">${d?d.signal:'--'}</span></div></div>
-        <div class="chart-info-card" style="border-left-color:#89b4fa"><div class="label">MA10</div><div class="val" style="color:#89b4fa">${d&&d.ma10!=null?d.ma10.toFixed(2):'--'}</div></div>
-        <div class="chart-info-card" style="border-left-color:#94e2d5"><div class="label">MA20</div><div class="val" style="color:#94e2d5">${d&&d.ma20!=null?d.ma20.toFixed(2):'--'}</div></div>
-        <div class="chart-info-card" style="border-left-color:#fab387"><div class="label">14-Day ATR</div><div class="val">${d&&d.atr!=null?d.atr.toFixed(2):'--'}</div></div>
-        ${trade ? `<div class="chart-info-card" style="border-left-color:${(d.price-trade.entryPrice)>=0?'#40a02b':'#d20f39'}"><div class="label">Unrealized P&L</div><div class="val" style="color:${(d.price-trade.entryPrice)>=0?'#40a02b':'#d20f39'}">${d?((d.price-trade.entryPrice)/(trade.atr||1)).toFixed(2):'--'}x ATR</div></div>` : ''}
+        <div class="chart-stats">
+          <div class="chart-stat">
+            <span class="cs-label">Signal</span>
+            <span class="cs-val"><span class="signal-badge ${d?d.signal.toLowerCase():'neutral'}" style="font-size:10px;padding:2px 6px">${d?d.signal:'--'}</span></span>
+          </div>
+          <div class="chart-stat">
+            <span class="cs-label">MA10</span>
+            <span class="cs-val" style="color:#89b4fa">${d&&d.ma10!=null?d.ma10.toFixed(2):'--'}</span>
+          </div>
+          <div class="chart-stat">
+            <span class="cs-label">MA20</span>
+            <span class="cs-val" style="color:#94e2d5">${d&&d.ma20!=null?d.ma20.toFixed(2):'--'}</span>
+          </div>
+          <div class="chart-stat">
+            <span class="cs-label">ATR 14</span>
+            <span class="cs-val">${d&&d.atr!=null?d.atr.toFixed(2):'--'}</span>
+          </div>
+          ${tradeUnrealPnl != null ? `<div class="chart-stat"><span class="cs-label">P&L</span><span class="cs-val" style="color:${tradeColor}">${tradeUnrealPnl}R</span></div>` : ''}
+        </div>
+        <div class="chart-price-block">
+          <div class="chart-price">${d ? '$' + fmt(d.price) : '...'}</div>
+          ${d ? `<div class="chart-day-chg" style="color:${chgColor}">${chgSign}${d.changePct.toFixed(2)}%</div>` : ''}
+        </div>
       </div>
 
       <div class="chart-container">
         <div class="chart-canvas-wrap"><canvas id="mainChart"></canvas></div>
         <div class="chart-legend">
-          <div class="legend-item"><div class="legend-dot" style="background:#26a69a"></div>Bullish</div>
-          <div class="legend-item"><div class="legend-dot" style="background:#ef5350"></div>Bearish</div>
           <div class="legend-item"><div class="legend-dot" style="background:#89b4fa"></div>MA10</div>
           <div class="legend-item"><div class="legend-dot" style="background:#94e2d5"></div>MA20</div>
-          <div class="legend-item"><div class="legend-dot" style="background:#f9e2af;width:14px;height:14px;border-radius:3px;font-size:8px;line-height:14px;text-align:center;color:#1e1e2e;font-weight:800">E</div>Earnings</div>
-          <button id="chartThemeToggle" onclick="toggleChartTheme()" style="margin-left:auto;background:none;border:1px solid var(--card-border);border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;color:var(--text2);font-family:var(--sans)">☀ Light</button>
+          <div class="legend-item"><div style="width:12px;height:12px;border-radius:2px;background:#f9e2af;font-size:7px;line-height:12px;text-align:center;color:#1e1e2e;font-weight:800;flex-shrink:0">E</div>Earnings</div>
+          <button id="chartThemeToggle" onclick="toggleChartTheme()" style="margin-left:auto;background:none;border:1px solid var(--card-border);border-radius:4px;padding:2px 9px;font-size:10px;cursor:pointer;color:var(--text2);font-family:var(--sans)">☀ Light</button>
         </div>
       </div>
 
       <div class="chart-actions">
-        <button class="btn btn-primary" onclick="openCalcFromChart('${ticker}')" style="padding:12px 28px;font-size:14px;font-weight:700;background:linear-gradient(135deg,#89b4fa,#74c7ec);box-shadow:0 2px 12px rgba(137,180,250,0.35)">↗ Enter Trade</button>
+        <button class="btn btn-primary" onclick="openCalcFromChart('${ticker}')" style="padding:10px 24px;font-size:13px;font-weight:700;background:linear-gradient(135deg,#89b4fa,#74c7ec);box-shadow:0 2px 12px rgba(137,180,250,0.3)">↗ Enter Trade</button>
       </div>
     </div>
   `;
@@ -1958,8 +1983,9 @@ function renderChartScreen() {
         crosses: d.crosses,
         earnings: []
       });
-      // Fetch earnings async and update chart
-      fetchEarnings(ticker).then(earningsData => {
+      // Fetch earnings async (skip ETFs — they have no quarterly earnings)
+      const isEtf = DIVERSIFIERS.includes(ticker) || (d.name && /\bETF\b/i.test(d.name));
+      fetchEarnings(isEtf ? null : ticker).then(earningsData => {
         if (chartEngine && chartEngine.data) {
           chartEngine.data.earnings = earningsData;
           chartEngine.draw();
