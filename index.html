@@ -733,56 +733,28 @@ async function fetchFMPCandidates() {
   return CANSLIM_FALLBACK;
 }
 
-// Fetch EPS growth, revenue growth, ROE TTM, operating margin TTM from FMP
-// Uses /api/v3/ endpoints (more reliable on free tier) with multiple field name fallbacks
-async function fetchFMPFundamentals(ticker) {
-  const cacheKey = `tp_fmp_f3_${ticker}`; // v3 key — busts any old cached data
-  const cached = fmpCacheGet(cacheKey, 86400000);
+// Fetch EPS growth, revenue growth, ROE TTM, operating margin TTM from Yahoo Finance
+// Uses the same quoteSummary API + proxy we already use for price data — no key needed
+async function fetchYahooFundamentals(ticker) {
+  const cacheKey = `tp_yf_fund_${ticker}`;
+  const cached = fmpCacheGet(cacheKey, 86400000); // 24h cache
   if (cached) return cached;
   try {
-    const [growthResp, ratiosResp] = await Promise.all([
-      fetch(`https://financialmodelingprep.com/api/v3/financial-growth?symbol=${ticker}&period=quarter&limit=2&apikey=${FMP_KEY}`),
-      fetch(`https://financialmodelingprep.com/api/v3/ratios-ttm?symbol=${ticker}&apikey=${FMP_KEY}`)
-    ]);
-    const growthRaw = growthResp.ok ? await growthResp.json() : [];
-    const ratiosRaw = ratiosResp.ok ? await ratiosResp.json() : null;
+    const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${ticker}?modules=financialData`;
+    const data = await fetchYahoo(url);
+    const fd = data?.quoteSummary?.result?.[0]?.financialData;
+    if (!fd) return null;
 
-    // Detect FMP rate-limit / error responses — do not cache these
-    const isFmpError = v => !v || (typeof v === 'object' && !Array.isArray(v) && ('Error Message' in v || 'message' in v || 'Information' in v));
-    if (isFmpError(growthRaw) && isFmpError(ratiosRaw)) {
-      console.warn(`[Screener] FMP rate limit or error for ${ticker} — skipping cache`);
-      return null;
-    }
-
-    const growthArr = Array.isArray(growthRaw) ? growthRaw : [];
-    const g   = growthArr[0] || null;
-    const rat = Array.isArray(ratiosRaw) ? ratiosRaw[0] : ratiosRaw; // ratios-ttm can be array or object
-
-    // EPS diluted growth quarterly YoY — try all known FMP field name variants
-    const epsGrowth = g
-      ? (g.epsgrowth ?? g.epsGrowth ?? g.epsDilutedGrowth ?? g.epsdilutedgrowth ?? null)
-      : null;
-
-    // Revenue growth quarterly YoY
-    const revenueGrowth = g
-      ? (g.revenueGrowth ?? g.revenue_growth ?? null)
-      : null;
-
-    // ROE TTM
-    const roe = rat
-      ? (rat.returnOnEquityTTM ?? rat.roeTTM ?? rat.roe ?? null)
-      : null;
-
-    // Operating margin TTM
-    const operatingMargin = rat
-      ? (rat.operatingProfitMarginTTM ?? rat.operatingMarginTTM ?? rat.operatingIncomeMarginTTM ?? null)
-      : null;
-
-    const result = { epsGrowth, revenueGrowth, roe, operatingMargin };
+    const result = {
+      epsGrowth:       fd.earningsGrowth?.raw  ?? null, // Quarterly earnings growth YoY
+      revenueGrowth:   fd.revenueGrowth?.raw   ?? null, // Quarterly revenue growth YoY
+      roe:             fd.returnOnEquity?.raw   ?? null, // Return on equity TTM
+      operatingMargin: fd.operatingMargins?.raw ?? null, // Operating margin TTM
+    };
     fmpCacheSet(cacheKey, result);
     return result;
   } catch (e) {
-    console.warn(`[Screener] FMP fundamentals failed for ${ticker}:`, e.message);
+    console.warn(`[Screener] Yahoo fundamentals failed for ${ticker}:`, e.message);
     return null;
   }
 }
@@ -891,7 +863,7 @@ async function runScreener() {
   const batchSize2 = 5;
   for (let i = 0; i < toCheck.length; i += batchSize2) {
     const batch = toCheck.slice(i, i + batchSize2);
-    await Promise.all(batch.map(t => fetchFMPFundamentals(t)));
+    await Promise.all(batch.map(t => fetchYahooFundamentals(t)));
     state.screenerProgress = 50 + Math.round((i / Math.max(toCheck.length, 1)) * 45);
     if (state.activeScreen === 'dashboard') renderScreenerProgress();
     if (i + batchSize2 < toCheck.length) await new Promise(r => setTimeout(r, 200));
@@ -899,11 +871,11 @@ async function runScreener() {
 
   // Log a sample to verify field names are resolving correctly
   if (toCheck[0]) {
-    console.log(`[Screener] Sample fundamentals (${toCheck[0]}):`, JSON.stringify(fmpCacheGet(`tp_fmp_f3_${toCheck[0]}`, 86400000)));
+    console.log(`[Screener] Sample fundamentals (${toCheck[0]}):`, JSON.stringify(fmpCacheGet(`tp_yf_fund_${toCheck[0]}`, 86400000)));
   }
 
   const withData = toCheck.filter(t => {
-    const f = fmpCacheGet(`tp_fmp_f3_${t}`, 86400000);
+    const f = fmpCacheGet(`tp_yf_fund_${t}`, 86400000);
     return f && f.epsGrowth != null && f.revenueGrowth != null;
   });
   console.log(`[Screener] Complete fundamental data for ${withData.length}/${toCheck.length} stocks`);
@@ -915,7 +887,7 @@ async function runScreener() {
     const tech = cache[ticker];
     if (!tech) continue;
 
-    const f = fmpCacheGet(`tp_fmp_f3_${ticker}`, 86400000);
+    const f = fmpCacheGet(`tp_yf_fund_${ticker}`, 86400000);
     if (!f) { console.log(`[Filter] ${ticker}: no fundamental data`); continue; }
 
     const { epsGrowth, revenueGrowth, roe, operatingMargin } = f;
