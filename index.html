@@ -1507,7 +1507,7 @@ function renderDashboard() {
         </div>
       </div>
       ${state.screenerRunning ? `<div class="screener-progress"><div class="fill" style="width:${state.screenerProgress}%"></div></div>` : ''}
-      ${state.screenerResults.length > 0 ? renderScreenerTable() : '<div style="color:var(--text3);padding:12px;font-size:13px">Run the screener to find qualifying stocks from the S&P 500 + Nasdaq 100 universe.</div>'}
+      ${state.screenerResults.length > 0 ? renderScreenerTable() : '<div style="color:var(--text3);padding:12px;font-size:13px">Run the screener to scan the full US market for CANSLIM-qualifying stocks.</div>'}
     </div>
   `;
 }
