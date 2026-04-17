@@ -349,6 +349,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;
 .signal-table .ticker-cell{font-weight:800;font-family:var(--mono);font-size:14px}
 .signal-table .price-cell{font-family:var(--mono);font-weight:600}
 .signal-table .change-cell{font-family:var(--mono);font-weight:600}
+.signal-table .change-cell.up{color:#40a02b}
+.signal-table .change-cell.down{color:#d20f39}
 .signal-table .ma-cell{font-family:var(--mono);font-size:12px}
 </style>
 </head>
@@ -739,10 +741,18 @@ async function fetchFMPFundamentals(ticker) {
       fetch(`https://financialmodelingprep.com/api/v3/financial-growth?symbol=${ticker}&period=quarter&limit=2&apikey=${FMP_KEY}`),
       fetch(`https://financialmodelingprep.com/api/v3/ratios-ttm?symbol=${ticker}&apikey=${FMP_KEY}`)
     ]);
-    const growthArr = growthResp.ok ? await growthResp.json() : [];
+    const growthRaw = growthResp.ok ? await growthResp.json() : [];
     const ratiosRaw = ratiosResp.ok ? await ratiosResp.json() : null;
 
-    const g   = Array.isArray(growthArr) ? growthArr[0] : growthArr;
+    // Detect FMP rate-limit / error responses — do not cache these
+    const isFmpError = v => !v || (typeof v === 'object' && !Array.isArray(v) && ('Error Message' in v || 'message' in v || 'Information' in v));
+    if (isFmpError(growthRaw) && isFmpError(ratiosRaw)) {
+      console.warn(`[Screener] FMP rate limit or error for ${ticker} — skipping cache`);
+      return null;
+    }
+
+    const growthArr = Array.isArray(growthRaw) ? growthRaw : [];
+    const g   = growthArr[0] || null;
     const rat = Array.isArray(ratiosRaw) ? ratiosRaw[0] : ratiosRaw; // ratios-ttm can be array or object
 
     // EPS diluted growth quarterly YoY — try all known FMP field name variants
@@ -855,13 +865,12 @@ async function runScreener() {
   }
   saveScreenCache(cache);
 
-  // Pre-filter: liquidity + size + 6M performance (no trend direction filter)
+  // Pre-filter: liquidity + size only (perf6m applied after fundamentals so it shows in table)
   const preCandidates = candidates.filter(t => {
     const d = cache[t];
     if (!d) return false;
     if (d.avgVol > 0 && d.avgVol < 500000) return false;          // Avg Volume 30D > 500K
     if (d.marketCap > 0 && d.marketCap < 2e9) return false;       // Market cap > $2B
-    if (d.perf6m < 20) return false;                               // Perf 6M > 20%
     return true;
   });
   console.log(`[Screener] Pre-filter: ${preCandidates.length} stocks pass size/volume/perf filters`);
@@ -909,11 +918,12 @@ async function runScreener() {
     const { epsGrowth, revenueGrowth, roe, operatingMargin } = f;
 
     // All 7 criteria must pass — null data means excluded
-    if (epsGrowth      == null || epsGrowth      < 0.50) continue; // EPS dil growth Qtrly YoY > 50%
-    if (revenueGrowth  == null || revenueGrowth  < 0.25) continue; // Revenue growth Qtrly YoY > 25%
-    if (roe            == null || roe            < 0.17) continue; // ROE TTM > 17%
-    if (operatingMargin == null || operatingMargin < 0)  continue; // Operating margin TTM > 0%
-    // Volume, mktcap, perf6m already enforced in pre-filter above
+    if (epsGrowth       == null || epsGrowth       < 0.50) continue; // EPS dil growth Qtrly YoY > 50%
+    if (revenueGrowth   == null || revenueGrowth   < 0.25) continue; // Revenue growth Qtrly YoY > 25%
+    if (roe             == null || roe             < 0.17) continue; // ROE TTM > 17%
+    if (operatingMargin == null || operatingMargin < 0)    continue; // Operating margin TTM > 0%
+    if (tech.perf6m < 20)                                  continue; // 6M performance > 20%
+    // Volume > 500K and mktcap > $2B enforced in pre-filter above
 
     qualified.push({ ticker, price: tech.price, trendDir: tech.trendDir, trendDays: tech.trendDays, atr: tech.atr, perf6m: tech.perf6m, epsGrowth, revenueGrowth, roe, operatingMargin });
   }
@@ -925,20 +935,20 @@ async function runScreener() {
     return b.epsGrowth - a.epsGrowth;
   });
 
-  state.screenerResults = qualified.slice(0, 25);
+  state.screenerResults = qualified.slice(0, 10); // Top 10 best stocks
   state.screenerRunning = false;
   state.screenerProgress = 100;
 
   localStorage.setItem('tp_screener', JSON.stringify({ results: state.screenerResults, timestamp: Date.now() }));
   if (state.activeScreen === 'dashboard') renderDashboard();
-  showToast(`CANSLIM screen complete: ${qualified.length} qualify, showing top ${Math.min(25, qualified.length)}`);
+  showToast(`CANSLIM screen complete — ${qualified.length} qualify, showing top ${Math.min(10, qualified.length)}`);
 }
 
 function loadCachedScreener() {
   const s = localStorage.getItem('tp_screener');
   if (!s) return;
   const data = JSON.parse(s);
-  if (Date.now() - data.timestamp < 3600000) {
+  if (Date.now() - data.timestamp < 4 * 3600000) { // 4-hour cache — results don't change drastically
     state.screenerResults = data.results || [];
   }
 }
@@ -2856,6 +2866,11 @@ async function init() {
 
   // Load initial data (don't await - let UI render immediately while data loads)
   refreshAllTickers();
+
+  // Auto-run screener if no fresh cached results (slight delay so UI renders first)
+  if (state.screenerResults.length === 0) {
+    setTimeout(() => runScreener(), 1500);
+  }
 
   // Auto-refresh every 10 minutes (includes IBKR sync)
   setInterval(() => {
