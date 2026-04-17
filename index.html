@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -18,7 +18,7 @@
   --bg2: #eaecf1;
   --card: rgba(255,255,255,0.72);
   --card-solid: #fff;
-  --card-border: rgba(137,180,250,0.25);
+  --card-border: rgba(0,0,0,0.09);
   --text: #1e1e2e;
   --text2: #585b70;
   --text3: #9399b2;
@@ -33,10 +33,10 @@
   --surface: rgba(255,255,255,0.55);
   --shadow: 0 2px 16px rgba(30,30,46,0.06);
   --shadow2: 0 4px 24px rgba(30,30,46,0.10);
-  --radius: 14px;
-  --radius-sm: 10px;
-  --mono: 'Space Grotesk','Inter','SF Pro Display',-apple-system,sans-serif;
-  --sans: 'Inter','SF Pro Display','SF Pro Text',-apple-system,BlinkMacSystemFont,'Segoe UI Variable Display','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --radius: 8px;
+  --radius-sm: 5px;
+  --mono: 'Inter','Trebuchet MS',-apple-system,sans-serif;
+  --sans: 'Inter',-apple-system,BlinkMacSystemFont,'Trebuchet MS',Roboto,Ubuntu,sans-serif;
   --sidebar-w: 220px;
   --header-h: 56px;
   --botnav-h: 68px;
@@ -47,7 +47,7 @@
   --bg2: #181825;
   --card: rgba(49,50,68,0.72);
   --card-solid: #313244;
-  --card-border: rgba(137,180,250,0.18);
+  --card-border: rgba(255,255,255,0.07);
   --text: #cdd6f4;
   --text2: #a6adc8;
   --text3: #6c7086;
@@ -57,7 +57,7 @@
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{height:100%;-webkit-tap-highlight-color:transparent}
-body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;overflow:hidden;transition:background var(--transition),color var(--transition);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;font-feature-settings:'cv01','cv02','cv03','cv04';letter-spacing:-0.011em;font-optical-sizing:auto}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;overflow:hidden;transition:background var(--transition),color var(--transition);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;font-feature-settings:'cv01','cv02','cv03','cv04';letter-spacing:-0.01em;font-optical-sizing:auto}
 #app{display:flex;height:100dvh;width:100%;position:relative}
 
 /* Sidebar - Desktop */
@@ -162,9 +162,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;
 .chart-legend .legend-dot{width:10px;height:3px;border-radius:2px}
 .chart-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .chart-info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
-.chart-info-card{background:var(--card);border:1px solid var(--card-border);border-left:3px solid var(--card-border);border-radius:var(--radius-sm);padding:10px 14px}
-.chart-info-card .label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.6px;font-weight:600}
-.chart-info-card .val{font-size:18px;font-weight:700;font-family:var(--mono);margin-top:3px;line-height:1.1}
+.chart-info-card{background:var(--card);border:1px solid var(--card-border);border-left:3px solid var(--card-border);border-radius:var(--radius-sm);padding:8px 12px}
+.chart-info-card .label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;font-weight:500}
+.chart-info-card .val{font-size:16px;font-weight:600;font-family:var(--mono);margin-top:2px;line-height:1.1}
 
 /* Buttons */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all var(--transition);font-family:var(--sans)}
@@ -345,8 +345,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;
   .signal-grid{display:grid}
 }
 .signal-table{width:100%;border-collapse:collapse;font-size:13px}
-.signal-table th{text-align:left;padding:10px 12px;border-bottom:2px solid var(--card-border);font-size:11px;text-transform:uppercase;color:var(--text3);letter-spacing:0.5px;white-space:nowrap}
-.signal-table td{padding:8px 12px;border-bottom:1px solid var(--card-border)}
+.signal-table th{text-align:left;padding:6px 10px;border-bottom:2px solid var(--card-border);font-size:11px;text-transform:uppercase;color:var(--text3);letter-spacing:0.5px;white-space:nowrap}
+.signal-table td{padding:8px 10px;border-bottom:1px solid var(--card-border)}
 .signal-table tr{cursor:pointer;transition:background var(--transition)}
 .signal-table tr:hover{background:var(--surface)}
 .signal-table .ticker-cell{font-weight:700;font-family:var(--mono);font-size:14px;letter-spacing:-0.01em}
@@ -1249,7 +1249,7 @@ class ChartEngine {
       const price = maxP - (i / gridLines) * priceRange;
       ctx.beginPath(); ctx.moveTo(plotX, y); ctx.lineTo(plotX + plotW, y); ctx.stroke();
       ctx.fillStyle = textColor;
-      ctx.font = '11px SF Mono, monospace';
+      ctx.font = '11px Inter, Trebuchet MS, system-ui';
       ctx.textAlign = 'right';
       ctx.fillText(price.toFixed(2), w - 4, y + 4);
     }
@@ -1276,7 +1276,7 @@ class ChartEngine {
 
     // Date labels (visible range only)
     ctx.fillStyle = textColor;
-    ctx.font = '10px system-ui';
+    ctx.font = '10px Inter, Trebuchet MS, system-ui';
     ctx.textAlign = 'center';
     const dateStep = Math.max(1, Math.floor(visibleBars / 8));
     for (let i = vs; i < ve; i += dateStep) {
@@ -1354,7 +1354,7 @@ class ChartEngine {
     if (ma10Arr) {
       ctx.beginPath();
       ctx.strokeStyle = '#89b4fa';
-      ctx.lineWidth = 2.2;
+      ctx.lineWidth = 1.5;
       started = false;
       for (let i = vs; i < ve; i++) {
         if (ma10Arr[i] == null) continue;
@@ -1368,7 +1368,7 @@ class ChartEngine {
     if (ma20Arr) {
       ctx.beginPath();
       ctx.strokeStyle = '#94e2d5';
-      ctx.lineWidth = 2.2;
+      ctx.lineWidth = 1.5;
       started = false;
       for (let i = vs; i < ve; i++) {
         if (ma20Arr[i] == null) continue;
@@ -1385,7 +1385,7 @@ class ChartEngine {
       const firstTs = timestamps[0];
       // Average interval in seconds between bars
       const avgInterval = total > 1 ? (lastTs - firstTs) / (total - 1) : 86400;
-      ctx.font = 'bold 9px system-ui';
+      ctx.font = 'bold 9px Inter, Trebuchet MS, system-ui';
       ctx.textAlign = 'center';
       for (const e of earnings) {
         let barIdx;
@@ -1463,10 +1463,44 @@ class ChartEngine {
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.fillStyle = o.color || '#89b4fa';
-      ctx.font = 'bold 10px system-ui';
+      ctx.font = 'bold 10px Inter, Trebuchet MS, system-ui';
       ctx.textAlign = 'left';
       ctx.fillText(o.label + ' ' + o.price.toFixed(2), plotX + 4, y - 4);
     });
+
+    // ── Last price line + right-axis badge (TradingView style) ──────────
+    const lastClose = total > 0 ? closes[total - 1] : null;
+    if (lastClose != null) {
+      const ly = toY(lastClose);
+      if (ly >= plotY && ly <= plotY + plotH) {
+        const prevClose = total > 1 ? closes[total - 2] : lastClose;
+        const lastPriceUp = lastClose >= (prevClose || lastClose);
+        const lastPriceColor = lastPriceUp ? '#26a69a' : '#ef5350';
+        // Dotted line across full width
+        ctx.beginPath();
+        ctx.setLineDash([1, 2]);
+        ctx.strokeStyle = isDark ? `${lastPriceColor}` : lastPriceColor;
+        ctx.globalAlpha = 0.6;
+        ctx.lineWidth = 0.8;
+        ctx.moveTo(plotX, ly);
+        ctx.lineTo(plotX + plotW, ly);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
+        // Right-axis price badge
+        const badgeW = 72, badgeH = 18;
+        const badgeX = plotX + plotW + 2;
+        const badgeY = ly - badgeH / 2;
+        ctx.fillStyle = lastPriceColor;
+        ctx.beginPath();
+        ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 10px Inter, Trebuchet MS, system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText(lastClose.toFixed(2), badgeX + badgeW / 2, badgeY + 13);
+      }
+    }
 
     // Crosshair + price label (TradingView style)
     const mouseY = this.hoverY;
@@ -1496,7 +1530,7 @@ class ChartEngine {
       ctx.roundRect(labelX, labelY, labelW, labelH, 3);
       ctx.fill();
       ctx.fillStyle = '#fff';
-      ctx.font = 'bold 10px SF Mono, monospace';
+      ctx.font = 'bold 10px Inter, Trebuchet MS, system-ui';
       ctx.textAlign = 'center';
       ctx.fillText(crossPrice.toFixed(2), labelX + labelW / 2, labelY + 14);
     }
@@ -1528,7 +1562,7 @@ class ChartEngine {
         ctx.roundRect(Math.max(plotX, dateLabelX), dateLabelY, dateLabelW, dateLabelH, 3);
         ctx.fill();
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 10px system-ui';
+        ctx.font = 'bold 10px Inter, Trebuchet MS, system-ui';
         ctx.textAlign = 'center';
         ctx.fillText(dateStr, hx, dateLabelY + 13);
       }
@@ -1551,7 +1585,7 @@ class ChartEngine {
 
       ctx.fillStyle = isDark ? 'rgba(30,30,46,0.85)' : 'rgba(244,246,249,0.9)';
       ctx.fillRect(plotX, plotY, plotW, 22);
-      ctx.font = '11px SF Mono, monospace';
+      ctx.font = '11px Inter, Trebuchet MS, system-ui';
       ctx.textAlign = 'left';
       ctx.fillStyle = o != null ? (isBull ? '#26a69a' : '#ef5350') : priceColor;
       ctx.fillText(infoText, plotX + 6, plotY + 15);
