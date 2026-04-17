@@ -576,6 +576,69 @@ function saveProfiles(profiles) { localStorage.setItem('tp_profiles', JSON.strin
 
 let profiles = loadProfiles();
 
+// ─── DEMO DATA SEED ───
+// Populates Josh's profile with realistic mock data so the UI is previewable
+function seedDemoData() {
+  const pk = 'josh';
+  if ((profiles[pk].journal||[]).length > 0 || (profiles[pk].trades||[]).length > 0) return;
+  profiles[pk].accountEquity = 100000;
+  profiles[pk].isDemoData = true;
+
+  // 34 closed trades — Oct 2024 → Mar 2026
+  // Each trade: id, ticker, entryDate, exitDate, entryPrice, exitPrice, pnl, rMultiple, shares, initialDollarRisk
+  profiles[pk].journal = [
+    {id:2001,ticker:'NVDA', entryDate:'2024-10-03',exitDate:'2024-10-28',entryPrice:120.50,exitPrice:129.30,pnl:440, rMultiple:0.88,shares:50, initialDollarRisk:500,rulesFollowed:true, notes:'Clean breakout, held 25 days'},
+    {id:2002,ticker:'TSLA', entryDate:'2024-11-04',exitDate:'2024-11-15',entryPrice:245.00,exitPrice:234.50,pnl:-378,rMultiple:-0.76,shares:36, initialDollarRisk:500,rulesFollowed:true, notes:'Stopped out'},
+    {id:2003,ticker:'META', entryDate:'2024-11-18',exitDate:'2024-12-12',entryPrice:555.00,exitPrice:618.00,pnl:1260,rMultiple:2.52,shares:20, initialDollarRisk:500,rulesFollowed:true, notes:'Strong trend continuation'},
+    {id:2004,ticker:'AMZN', entryDate:'2024-12-05',exitDate:'2024-12-20',entryPrice:211.00,exitPrice:206.80,pnl:-84, rMultiple:-0.17,shares:20, initialDollarRisk:500,rulesFollowed:true, notes:'Quick stop'},
+    {id:2005,ticker:'AAPL', entryDate:'2024-12-23',exitDate:'2025-01-15',entryPrice:248.00,exitPrice:260.50,pnl:625, rMultiple:1.25,shares:50, initialDollarRisk:500,rulesFollowed:true, notes:''},
+    {id:2006,ticker:'MSFT', entryDate:'2025-01-08',exitDate:'2025-01-24',entryPrice:424.00,exitPrice:431.00,pnl:175, rMultiple:0.35,shares:25, initialDollarRisk:500,rulesFollowed:true, notes:'Partial exit near resistance'},
+    {id:2007,ticker:'GOOGL',entryDate:'2025-01-27',exitDate:'2025-02-10',entryPrice:192.00,exitPrice:184.50,pnl:-525,rMultiple:-1.05,shares:70, initialDollarRisk:500,rulesFollowed:true, notes:'Stopped out on earnings miss'},
+    {id:2008,ticker:'CRM',  entryDate:'2025-02-05',exitDate:'2025-02-18',entryPrice:335.00,exitPrice:334.20,pnl:-96, rMultiple:-0.19,shares:120,initialDollarRisk:500,rulesFollowed:false,notes:'Exited early on chop'},
+    {id:2009,ticker:'PLTR', entryDate:'2025-02-20',exitDate:'2025-03-22',entryPrice:82.00, exitPrice:103.50,pnl:1075,rMultiple:2.15,shares:50, initialDollarRisk:500,rulesFollowed:true, notes:'Defense spending theme, ran well'},
+    {id:2010,ticker:'CRWD', entryDate:'2025-03-05',exitDate:'2025-03-28',entryPrice:370.00,exitPrice:398.00,pnl:756, rMultiple:1.51,shares:27, initialDollarRisk:500,rulesFollowed:true, notes:'Cyber sector strength'},
+    {id:2011,ticker:'NFLX', entryDate:'2025-03-31',exitDate:'2025-04-11',entryPrice:880.00,exitPrice:862.00,pnl:-432,rMultiple:-0.86,shares:24, initialDollarRisk:500,rulesFollowed:true, notes:'Market turned, cut loss quickly'},
+    {id:2012,ticker:'NVDA', entryDate:'2025-04-22',exitDate:'2025-05-30',entryPrice:875.00,exitPrice:1050.00,pnl:1750,rMultiple:3.50,shares:10, initialDollarRisk:500,rulesFollowed:true, notes:'AI theme, rode the whole move'},
+    {id:2013,ticker:'AVGO', entryDate:'2025-05-08',exitDate:'2025-05-27',entryPrice:185.00,exitPrice:195.00,pnl:500, rMultiple:1.00,shares:50, initialDollarRisk:500,rulesFollowed:true, notes:''},
+    {id:2014,ticker:'INTU', entryDate:'2025-05-12',exitDate:'2025-05-20',entryPrice:720.00,exitPrice:712.00,pnl:-152,rMultiple:-0.30,shares:19, initialDollarRisk:500,rulesFollowed:true, notes:'Quick stop, right call'},
+    {id:2015,ticker:'GLD',  entryDate:'2025-05-28',exitDate:'2025-06-18',entryPrice:230.00,exitPrice:238.00,pnl:440, rMultiple:0.88,shares:55, initialDollarRisk:500,rulesFollowed:true, notes:'Gold breakout, clean trend'},
+    {id:2016,ticker:'AMZN', entryDate:'2025-06-03',exitDate:'2025-06-14',entryPrice:190.00,exitPrice:186.00,pnl:-96, rMultiple:-0.19,shares:24, initialDollarRisk:500,rulesFollowed:true, notes:''},
+    {id:2017,ticker:'TSLA', entryDate:'2025-06-23',exitDate:'2025-07-10',entryPrice:340.00,exitPrice:326.00,pnl:-504,rMultiple:-1.01,shares:36, initialDollarRisk:500,rulesFollowed:true, notes:'Volatile, stopped out at loss limit'},
+    {id:2018,ticker:'META', entryDate:'2025-07-08',exitDate:'2025-07-21',entryPrice:590.00,exitPrice:582.00,pnl:-296,rMultiple:-0.59,shares:37, initialDollarRisk:500,rulesFollowed:true, notes:'Chop, small loss'},
+    {id:2019,ticker:'SNOW', entryDate:'2025-07-28',exitDate:'2025-08-09',entryPrice:145.00,exitPrice:141.50,pnl:-280,rMultiple:-0.56,shares:80, initialDollarRisk:500,rulesFollowed:true, notes:'Quick stop, right call'},
+    {id:2020,ticker:'AAPL', entryDate:'2025-08-18',exitDate:'2025-09-12',entryPrice:220.00,exitPrice:234.00,pnl:700, rMultiple:1.40,shares:50, initialDollarRisk:500,rulesFollowed:true, notes:'iPhone cycle'},
+    {id:2021,ticker:'NOW',  entryDate:'2025-09-04',exitDate:'2025-09-25',entryPrice:880.00,exitPrice:900.00,pnl:500, rMultiple:1.00,shares:25, initialDollarRisk:500,rulesFollowed:true, notes:''},
+    {id:2022,ticker:'NVDA', entryDate:'2025-09-30',exitDate:'2025-10-28',entryPrice:1100.00,exitPrice:1380.00,pnl:2240,rMultiple:4.48,shares:8,  initialDollarRisk:500,rulesFollowed:true, notes:'AI GPU supercycle, best trade of the year'},
+    {id:2023,ticker:'PLTR', entryDate:'2025-10-07',exitDate:'2025-10-22',entryPrice:44.00, exitPrice:46.20, pnl:550, rMultiple:1.10,shares:250,initialDollarRisk:500,rulesFollowed:true, notes:''},
+    {id:2024,ticker:'ORCL', entryDate:'2025-10-14',exitDate:'2025-10-20',entryPrice:188.00,exitPrice:184.50,pnl:-91, rMultiple:-0.18,shares:26, initialDollarRisk:500,rulesFollowed:true, notes:'Quick stop'},
+    {id:2025,ticker:'PANW', entryDate:'2025-10-29',exitDate:'2025-11-20',entryPrice:192.00,exitPrice:212.00,pnl:800, rMultiple:1.60,shares:40, initialDollarRisk:500,rulesFollowed:true, notes:''},
+    {id:2026,ticker:'CRWD', entryDate:'2025-11-06',exitDate:'2025-11-25',entryPrice:340.00,exitPrice:356.00,pnl:608, rMultiple:1.22,shares:38, initialDollarRisk:500,rulesFollowed:true, notes:''},
+    {id:2027,ticker:'TSLA', entryDate:'2025-11-28',exitDate:'2025-12-11',entryPrice:420.00,exitPrice:409.00,pnl:-462,rMultiple:-0.92,shares:42, initialDollarRisk:500,rulesFollowed:true, notes:'Market soft, stopped out'},
+    {id:2028,ticker:'AMZN', entryDate:'2025-12-04',exitDate:'2025-12-18',entryPrice:215.00,exitPrice:216.80,pnl:-89, rMultiple:-0.18,shares:49, initialDollarRisk:500,rulesFollowed:false,notes:'Exited on weakness before stop'},
+    {id:2029,ticker:'GOOGL',entryDate:'2025-12-22',exitDate:'2026-01-16',entryPrice:195.00,exitPrice:212.00,pnl:850, rMultiple:1.70,shares:50, initialDollarRisk:500,rulesFollowed:true, notes:''},
+    {id:2030,ticker:'MSFT', entryDate:'2026-01-08',exitDate:'2026-01-28',entryPrice:440.00,exitPrice:458.00,pnl:756, rMultiple:1.51,shares:42, initialDollarRisk:500,rulesFollowed:true, notes:''},
+    {id:2031,ticker:'META', entryDate:'2026-01-30',exitDate:'2026-02-24',entryPrice:640.00,exitPrice:665.00,pnl:1000,rMultiple:2.00,shares:40, initialDollarRisk:500,rulesFollowed:true, notes:'Earnings beat, held through'},
+    {id:2032,ticker:'NFLX', entryDate:'2026-02-10',exitDate:'2026-02-20',entryPrice:1020.00,exitPrice:1014.00,pnl:-102,rMultiple:-0.20,shares:17, initialDollarRisk:500,rulesFollowed:true, notes:'Quick stop'},
+    {id:2033,ticker:'NVDA', entryDate:'2026-02-25',exitDate:'2026-03-20',entryPrice:1250.00,exitPrice:1374.00,pnl:744, rMultiple:1.49,shares:6,  initialDollarRisk:500,rulesFollowed:true, notes:''},
+    {id:2034,ticker:'COIN', entryDate:'2026-03-04',exitDate:'2026-03-24',entryPrice:230.00,exitPrice:248.00,pnl:540, rMultiple:1.08,shares:30, initialDollarRisk:500,rulesFollowed:true, notes:'Crypto momentum'},
+  ];
+
+  // 4 open positions
+  const mkLayers = (entry, atr, shares) => {
+    const layers = [{layer:1,triggerPrice:entry,shares,status:'FILLED'}];
+    for(let i=2;i<=10;i++) layers.push({layer:i,triggerPrice:+(entry+(i-1)*atr).toFixed(2),shares:0,status:i===2?'NEXT ADD':'PENDING'});
+    return layers;
+  };
+  profiles[pk].trades = [
+    {id:3001,ticker:'AAPL', entryDate:'2026-03-28',entryPrice:225.50,stopPrice:215.00,atr:4.80, initialDollarRisk:500,dollarRisk:500,shares:47,totalShares:47, pyramidLayers:mkLayers(225.50,4.80,47)},
+    {id:3002,ticker:'NVDA', entryDate:'2026-04-02',entryPrice:1340.00,stopPrice:1268.00,atr:28.0,initialDollarRisk:500,dollarRisk:500,shares:7, totalShares:7,  pyramidLayers:mkLayers(1340.00,28.0,7)},
+    {id:3003,ticker:'PLTR', entryDate:'2026-04-07',entryPrice:88.00, stopPrice:80.50, atr:3.20, initialDollarRisk:500,dollarRisk:500,shares:156,totalShares:156,pyramidLayers:mkLayers(88.00,3.20,156)},
+    {id:3004,ticker:'GLD',  entryDate:'2026-04-10',entryPrice:242.00,stopPrice:235.50,atr:2.60, initialDollarRisk:500,dollarRisk:500,shares:77, totalShares:77, pyramidLayers:mkLayers(242.00,2.60,77)},
+  ];
+  saveProfiles(profiles);
+}
+seedDemoData();
+
 function loadCustomTickers() {
   const s = localStorage.getItem('tp_custom_tickers');
   return s ? JSON.parse(s) : [];
