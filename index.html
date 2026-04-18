@@ -1941,37 +1941,43 @@ function renderSnapshot(trades, journal) {
     const pnlSign = pnl >= 0 ? '+' : '';
     const pnlColor = pnl >= 0 ? 'var(--green)' : 'var(--red)';
     const holdDays = t.entryDate ? Math.round((today - new Date(t.entryDate + 'T12:00:00')) / 86400000) : '?';
-    // Next pyramid trigger
     const nextLayer = (t.pyramidLayers || []).find(l => l.status === 'NEXT ADD' || l.status === 'NEXT');
     const distPct = (nextLayer && currentPrice) ? ((nextLayer.triggerPrice - currentPrice) / currentPrice * 100) : null;
-    const nextHtml = distPct !== null
-      ? `<span style="color:var(--text3);font-size:10px">next add ${distPct > 0 ? '+' : ''}${distPct.toFixed(1)}%</span>`
-      : '';
-    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--card-border)">
-      <span style="font-weight:700;font-family:var(--mono);font-size:13px;min-width:52px">${t.ticker}</span>
-      <span style="color:var(--text3);font-size:11px;min-width:44px">${holdDays}d held</span>
-      ${nextHtml}
-      <span style="font-weight:700;font-family:var(--mono);font-size:13px;color:${pnlColor}">${pnlSign}$${fmt(Math.abs(pnl))}</span>
+    const nextCell = distPct !== null ? `${distPct > 0 ? '+' : ''}${distPct.toFixed(1)}%` : '—';
+    return `<div style="display:grid;grid-template-columns:52px 52px 68px 1fr;align-items:center;padding:5px 0;border-bottom:1px solid var(--card-border);gap:4px">
+      <span style="font-weight:700;font-family:var(--mono);font-size:13px">${t.ticker}</span>
+      <span style="color:var(--text3);font-size:11px;text-align:center">${holdDays}d</span>
+      <span style="color:var(--text3);font-size:10px;text-align:center">${nextCell}</span>
+      <span style="font-weight:700;font-family:var(--mono);font-size:13px;color:${pnlColor};text-align:right">${pnlSign}$${fmt(Math.abs(pnl))}</span>
     </div>`;
   });
   const openPositionsHtml = openRows.length > 0
-    ? openRows.join('')
+    ? `<div style="display:grid;grid-template-columns:52px 52px 68px 1fr;padding:0 0 4px;gap:4px">
+        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)">Ticker</span>
+        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);text-align:center">Held</span>
+        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);text-align:center">Next Add</span>
+        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);text-align:right">P&amp;L</span>
+      </div>` + openRows.join('')
     : '<span style="color:var(--text3);font-size:13px">No open positions</span>';
 
   // ── Last 5 closed trades ──
   const sorted = [...(journal || [])].sort((a, b) => (b.exitDate || '').localeCompare(a.exitDate || ''));
   const recentTrades = sorted.slice(0, 5);
   const recentHtml = recentTrades.length > 0
-    ? recentTrades.map(t => {
+    ? `<div style="display:grid;grid-template-columns:52px 40px 1fr;padding:0 0 4px;gap:4px">
+        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)">Ticker</span>
+        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);text-align:center">Held</span>
+        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);text-align:right">P&amp;L</span>
+      </div>` + recentTrades.map(t => {
         const pnlSign = t.pnl >= 0 ? '+' : '';
         const pnlColor = t.pnl >= 0 ? 'var(--green)' : 'var(--red)';
         const holdDays = (t.entryDate && t.exitDate)
           ? Math.round((new Date(t.exitDate + 'T12:00:00') - new Date(t.entryDate + 'T12:00:00')) / 86400000)
           : '?';
-        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--card-border)">
-          <span style="font-weight:700;font-family:var(--mono);font-size:13px;min-width:52px">${t.ticker}</span>
-          <span style="color:var(--text3);font-size:11px">${holdDays}d</span>
-          <span style="font-weight:700;font-family:var(--mono);font-size:13px;color:${pnlColor}">${pnlSign}$${fmt(Math.abs(t.pnl))}</span>
+        return `<div style="display:grid;grid-template-columns:52px 40px 1fr;align-items:center;padding:5px 0;border-bottom:1px solid var(--card-border);gap:4px">
+          <span style="font-weight:700;font-family:var(--mono);font-size:13px">${t.ticker}</span>
+          <span style="color:var(--text3);font-size:11px;text-align:center">${holdDays}d</span>
+          <span style="font-weight:700;font-family:var(--mono);font-size:13px;color:${pnlColor};text-align:right">${pnlSign}$${fmt(Math.abs(t.pnl))}</span>
         </div>`;
       }).join('')
     : '<span style="color:var(--text3);font-size:13px">No closed trades yet</span>';
