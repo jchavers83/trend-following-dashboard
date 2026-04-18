@@ -1912,9 +1912,10 @@ function renderSnapshot(trades, journal) {
     return `<span class="snap-regime-pill ${cls}">${t} ${arrow}</span>`;
   }).join('');
   const regimeOk = qqq?.signal === 'LONG' && spy?.signal === 'LONG';
+  const regimeBad = qqq?.signal === 'SHORT' && spy?.signal === 'SHORT';
   const regimeMsg = (qqq && spy)
-    ? (regimeOk ? 'Market regime: <b style="color:var(--green)">Trend-following ON</b>' : 'Market regime: <b style="color:var(--red)">New entries paused</b>')
-    : 'Market regime: <span style="color:var(--text3)">Loading…</span>';
+    ? (regimeOk ? '<b style="color:var(--green)">Uptrend — entries open</b>' : (regimeBad ? '<b style="color:var(--red)">Downtrend — entries paused</b>' : '<b style="color:#df8e1d">Mixed — entries paused</b>'))
+    : '<span style="color:var(--text3)">Loading…</span>';
 
   // ── New crosses ──
   const newCrosses = allVisible
@@ -1971,7 +1972,7 @@ function renderSnapshot(trades, journal) {
   return `
     <div class="snap-card">
       <div class="snap-section">
-        <div class="snap-label">Market Regime</div>
+        <div class="snap-label">Market Direction</div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px">
           ${regimeSignals}
           <span style="font-size:12px;color:var(--text2)">${regimeMsg}</span>
