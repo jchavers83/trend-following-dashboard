@@ -1969,6 +1969,31 @@ function renderSnapshot(trades, journal) {
     ? `<span style="color:${streakColor};font-weight:700">${streak} ${streakType === 'W' ? 'win' : 'loss'} streak</span>`
     : '<span style="color:var(--text3)">–</span>';
 
+  // ── Near-cross watch (open positions within 5% of a MA crossover) ──
+  const nearCross = trades.map(t => {
+    const d = state.tickerData[t.ticker];
+    if (!d || !d.ma10 || !d.ma20) return null;
+    const gapPct = Math.abs(d.ma10 - d.ma20) / d.ma20 * 100;
+    if (gapPct > 5) return null;
+    // Direction of approaching cross
+    const holdingLong = t.direction !== 'SHORT';
+    const approachingBearish = holdingLong && d.ma10 > d.ma20; // long position, MA10 falling toward MA20
+    const approachingBullish = !holdingLong && d.ma10 < d.ma20; // short position, MA10 rising toward MA20
+    if (!approachingBearish && !approachingBullish) return null;
+    return { ticker: t.ticker, gapPct, approachingBearish };
+  }).filter(Boolean).sort((a, b) => a.gapPct - b.gapPct);
+
+  const nearCrossHtml = nearCross.length > 0
+    ? nearCross.map(n => {
+        const label = n.approachingBearish ? 'exit signal' : 'cover signal';
+        const color = n.approachingBearish ? '#df8e1d' : 'var(--green)';
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--card-border)">
+          <span style="font-weight:700;font-family:var(--mono);font-size:13px">${n.ticker}</span>
+          <span style="font-size:11px;color:${color}">⚠ ${label} within ${n.gapPct.toFixed(1)}%</span>
+        </div>`;
+      }).join('')
+    : `<span style="color:var(--text3);font-size:13px">No open positions near a crossover</span>`;
+
   return `
     <div class="snap-card">
       <div class="snap-section">
@@ -1982,6 +2007,11 @@ function renderSnapshot(trades, journal) {
       <div class="snap-section">
         <div class="snap-label">New Crosses Today <span style="color:var(--text3);font-weight:400">(${newCrosses.length})</span></div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${crossHtml}</div>
+      </div>
+      <div class="snap-divider"></div>
+      <div class="snap-section">
+        <div class="snap-label">Approaching Crossover <span style="color:var(--text3);font-weight:400">(open positions within 5%)</span></div>
+        <div style="margin-top:6px">${nearCrossHtml}</div>
       </div>
       <div class="snap-divider"></div>
       <div class="snap-row">
