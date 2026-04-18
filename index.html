@@ -1931,43 +1931,50 @@ function renderSnapshot(trades, journal) {
       }).join('')
     : `<span style="color:var(--text3);font-size:13px">No new crosses today</span>`;
 
-  // ── Open P&L ──
-  let openPnl = 0, winners = 0, losers = 0;
-  trades.forEach(t => {
+  // ── Open positions with live P&L and next pyramid trigger ──
+  const today = new Date();
+  const openRows = trades.map(t => {
     const d = state.tickerData[t.ticker];
-    if (d) {
-      const pnl = (d.price - t.entryPrice) * (t.totalShares || t.shares || 0);
-      openPnl += pnl;
-      pnl >= 0 ? winners++ : losers++;
-    }
+    const currentPrice = d?.price || t.entryPrice;
+    const shares = t.totalShares || t.shares || 0;
+    const pnl = (currentPrice - t.entryPrice) * shares;
+    const pnlSign = pnl >= 0 ? '+' : '';
+    const pnlColor = pnl >= 0 ? 'var(--green)' : 'var(--red)';
+    const holdDays = t.entryDate ? Math.round((today - new Date(t.entryDate + 'T12:00:00')) / 86400000) : '?';
+    // Next pyramid trigger
+    const nextLayer = (t.pyramidLayers || []).find(l => l.status === 'NEXT ADD' || l.status === 'NEXT');
+    const distPct = (nextLayer && currentPrice) ? ((nextLayer.triggerPrice - currentPrice) / currentPrice * 100) : null;
+    const nextHtml = distPct !== null
+      ? `<span style="color:var(--text3);font-size:10px">next add ${distPct > 0 ? '+' : ''}${distPct.toFixed(1)}%</span>`
+      : '';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--card-border)">
+      <span style="font-weight:700;font-family:var(--mono);font-size:13px;min-width:52px">${t.ticker}</span>
+      <span style="color:var(--text3);font-size:11px;min-width:44px">${holdDays}d held</span>
+      ${nextHtml}
+      <span style="font-weight:700;font-family:var(--mono);font-size:13px;color:${pnlColor}">${pnlSign}$${fmt(Math.abs(pnl))}</span>
+    </div>`;
   });
-  const pnlSign = openPnl >= 0 ? '+' : '';
-  const pnlColor = openPnl >= 0 ? 'var(--green)' : 'var(--red)';
+  const openPositionsHtml = openRows.length > 0
+    ? openRows.join('')
+    : '<span style="color:var(--text3);font-size:13px">No open positions</span>';
 
-  // ── Last closed trade ──
+  // ── Last 5 closed trades ──
   const sorted = [...(journal || [])].sort((a, b) => (b.exitDate || '').localeCompare(a.exitDate || ''));
-  const lastTrade = sorted[0];
-  let lastTradeHtml = '<span style="color:var(--text3);font-size:13px">No closed trades yet</span>';
-  if (lastTrade) {
-    const rSign = lastTrade.rMultiple >= 0 ? '+' : '';
-    const rColor = lastTrade.rMultiple >= 0 ? 'var(--green)' : 'var(--red)';
-    const dt = lastTrade.exitDate ? new Date(lastTrade.exitDate + 'T12:00:00').toLocaleDateString('en-US', {month:'numeric',day:'numeric',year:'2-digit'}) : '';
-    lastTradeHtml = `<span style="font-weight:700;font-family:var(--mono)">${lastTrade.ticker}</span>
-      <span style="color:${rColor};font-weight:700;margin-left:6px">${rSign}${lastTrade.rMultiple?.toFixed(2)}R</span>
-      <span style="color:var(--text3);font-size:11px;margin-left:6px">${dt}</span>`;
-  }
-
-  // ── Win streak ──
-  let streak = 0, streakType = '';
-  for (const t of sorted) {
-    if (streak === 0) { streakType = t.rMultiple >= 0 ? 'W' : 'L'; streak = 1; }
-    else if ((t.rMultiple >= 0 && streakType === 'W') || (t.rMultiple < 0 && streakType === 'L')) streak++;
-    else break;
-  }
-  const streakColor = streakType === 'W' ? 'var(--green)' : 'var(--red)';
-  const streakHtml = streak > 0
-    ? `<span style="color:${streakColor};font-weight:700">${streak} ${streakType === 'W' ? 'win' : 'loss'} streak</span>`
-    : '<span style="color:var(--text3)">–</span>';
+  const recentTrades = sorted.slice(0, 5);
+  const recentHtml = recentTrades.length > 0
+    ? recentTrades.map(t => {
+        const pnlSign = t.pnl >= 0 ? '+' : '';
+        const pnlColor = t.pnl >= 0 ? 'var(--green)' : 'var(--red)';
+        const holdDays = (t.entryDate && t.exitDate)
+          ? Math.round((new Date(t.exitDate + 'T12:00:00') - new Date(t.entryDate + 'T12:00:00')) / 86400000)
+          : '?';
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--card-border)">
+          <span style="font-weight:700;font-family:var(--mono);font-size:13px;min-width:52px">${t.ticker}</span>
+          <span style="color:var(--text3);font-size:11px">${holdDays}d</span>
+          <span style="font-weight:700;font-family:var(--mono);font-size:13px;color:${pnlColor}">${pnlSign}$${fmt(Math.abs(t.pnl))}</span>
+        </div>`;
+      }).join('')
+    : '<span style="color:var(--text3);font-size:13px">No closed trades yet</span>';
 
   // ── Near-cross watch (open positions within 5% of a MA crossover) ──
   const nearCross = trades.map(t => {
@@ -2015,15 +2022,13 @@ function renderSnapshot(trades, journal) {
       </div>
       <div class="snap-divider"></div>
       <div class="snap-row">
-        <div class="snap-section" style="flex:1;min-width:140px">
-          <div class="snap-label">Open P&amp;L</div>
-          <div style="font-size:20px;font-weight:700;font-family:var(--mono);color:${pnlColor};margin-top:4px">${pnlSign}$${fmt(Math.abs(openPnl))}</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px">${trades.length} position${trades.length !== 1 ? 's' : ''} · ${winners}W ${losers}L</div>
+        <div class="snap-section" style="flex:1;min-width:180px">
+          <div class="snap-label">Open Positions (${trades.length})</div>
+          <div style="margin-top:6px">${openPositionsHtml}</div>
         </div>
-        <div class="snap-section" style="flex:1;min-width:140px">
-          <div class="snap-label">Last Closed Trade</div>
-          <div style="margin-top:4px;font-size:14px">${lastTradeHtml}</div>
-          <div style="margin-top:4px;font-size:11px;color:var(--text3)">${streakHtml}</div>
+        <div class="snap-section" style="flex:1;min-width:180px">
+          <div class="snap-label">Last 5 Closed Trades</div>
+          <div style="margin-top:6px">${recentHtml}</div>
         </div>
       </div>
     </div>`;
