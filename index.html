@@ -1914,7 +1914,7 @@ function renderSnapshot(trades, journal) {
   const regimeOk = qqq?.signal === 'LONG' && spy?.signal === 'LONG';
   const regimeBad = qqq?.signal === 'SHORT' && spy?.signal === 'SHORT';
   const regimeMsg = (qqq && spy)
-    ? (regimeOk ? '<b style="color:var(--green)">Uptrend — entries open</b>' : (regimeBad ? '<b style="color:var(--red)">Downtrend — entries paused</b>' : '<b style="color:#df8e1d">Mixed — entries paused</b>'))
+    ? (regimeOk ? '<b style="color:var(--green)">Uptrend</b>' : (regimeBad ? '<b style="color:var(--red)">Downtrend</b>' : '<b style="color:#df8e1d">Mixed</b>'))
     : '<span style="color:var(--text3)">Loading…</span>';
 
   // ── New crosses ──
