@@ -126,6 +126,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;
 .snap-cross-pill{font-size:12px;font-weight:700;font-family:var(--mono);padding:3px 9px;border-radius:6px;letter-spacing:0.3px}
 .snap-cross-pill.long{background:rgba(64,160,43,0.12);color:#40a02b;border:1px solid rgba(64,160,43,0.25)}
 .snap-cross-pill.short{background:rgba(210,15,57,0.1);color:#d20f39;border:1px solid rgba(210,15,57,0.2)}
+.period-btn{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;border:1px solid var(--card-border);background:var(--surface);color:var(--text3);cursor:pointer;font-family:var(--mono);transition:all .15s}
+.period-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.snap-vdivider{width:1px;background:var(--card-border);align-self:stretch;flex-shrink:0;margin:0 4px}
 .summary-card{background:var(--card);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--card-border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);transition:all var(--transition)}
 .summary-card .label{font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:4px}
 .summary-card .value{font-size:24px;font-weight:700;font-family:var(--mono)}
@@ -571,6 +574,7 @@ let state = {
   customTickers: [],
   refreshing: false,
   calcPrefill: null,
+  pnlPeriod: 'ALL',
   portfolioTab: 'performance',
   equityPeriod: 'ALL'
 };
@@ -1868,6 +1872,8 @@ function renderRefreshBtn() {
   else btn.querySelector('svg').classList.remove('refresh-spin');
 }
 
+function setPnlPeriod(p) { state.pnlPeriod = p; renderDashboard(); }
+
 function navigateTo(screen, options={}) {
   state.activeScreen = screen;
   if (options.ticker) state.selectedTicker = options.ticker;
@@ -1933,7 +1939,8 @@ function renderSnapshot(trades, journal) {
 
   // ── Open positions with live P&L and next pyramid trigger ──
   const today = new Date();
-  const openRows = trades.map(t => {
+  const COL_OPEN = '46px 36px 58px 72px';
+  const openRows = trades.map((t, i) => {
     const d = state.tickerData[t.ticker];
     const currentPrice = d?.price || t.entryPrice;
     const shares = t.totalShares || t.shares || 0;
@@ -1944,40 +1951,43 @@ function renderSnapshot(trades, journal) {
     const nextLayer = (t.pyramidLayers || []).find(l => l.status === 'NEXT ADD' || l.status === 'NEXT');
     const distPct = (nextLayer && currentPrice) ? ((nextLayer.triggerPrice - currentPrice) / currentPrice * 100) : null;
     const nextCell = distPct !== null ? `${distPct > 0 ? '+' : ''}${distPct.toFixed(1)}%` : '—';
-    return `<div style="display:grid;grid-template-columns:52px 52px 68px 1fr;align-items:center;padding:5px 0;border-bottom:1px solid var(--card-border);gap:4px">
-      <span style="font-weight:700;font-family:var(--mono);font-size:13px">${t.ticker}</span>
-      <span style="color:var(--text3);font-size:11px;text-align:center">${holdDays}d</span>
-      <span style="color:var(--text3);font-size:10px;text-align:center">${nextCell}</span>
-      <span style="font-weight:700;font-family:var(--mono);font-size:13px;color:${pnlColor};text-align:right">${pnlSign}$${fmt(Math.abs(pnl))}</span>
+    const border = i < trades.length - 1 ? 'border-bottom:1px solid var(--card-border)' : '';
+    return `<div style="display:grid;grid-template-columns:${COL_OPEN};align-items:center;padding:5px 0;${border};gap:4px">
+      <span style="font-weight:700;font-family:var(--mono);font-size:12px">${t.ticker}</span>
+      <span style="color:var(--text3);font-size:11px;text-align:right">${holdDays}d</span>
+      <span style="color:var(--text3);font-size:11px;text-align:right">${nextCell}</span>
+      <span style="font-weight:700;font-family:var(--mono);font-size:12px;color:${pnlColor};text-align:right">${pnlSign}$${fmt(Math.abs(pnl))}</span>
     </div>`;
   });
   const openPositionsHtml = openRows.length > 0
-    ? `<div style="display:grid;grid-template-columns:52px 52px 68px 1fr;padding:0 0 4px;gap:4px">
-        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)">Ticker</span>
-        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);text-align:center">Held</span>
-        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);text-align:center">Next Add</span>
-        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);text-align:right">P&amp;L</span>
+    ? `<div style="display:grid;grid-template-columns:${COL_OPEN};padding:0 0 4px;gap:4px;border-bottom:1px solid var(--card-border);margin-bottom:1px">
+        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Ticker</span>
+        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);text-align:right">Held</span>
+        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);text-align:right">Next+</span>
+        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);text-align:right">P&amp;L</span>
       </div>` + openRows.join('')
     : '<span style="color:var(--text3);font-size:13px">No open positions</span>';
 
   // ── Last 5 closed trades ──
   const sorted = [...(journal || [])].sort((a, b) => (b.exitDate || '').localeCompare(a.exitDate || ''));
   const recentTrades = sorted.slice(0, 5);
+  const COL_RECENT = '46px 36px 1fr';
   const recentHtml = recentTrades.length > 0
-    ? `<div style="display:grid;grid-template-columns:52px 40px 1fr;padding:0 0 4px;gap:4px">
-        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)">Ticker</span>
-        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);text-align:center">Held</span>
-        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);text-align:right">P&amp;L</span>
-      </div>` + recentTrades.map(t => {
+    ? `<div style="display:grid;grid-template-columns:${COL_RECENT};padding:0 0 4px;gap:4px;border-bottom:1px solid var(--card-border);margin-bottom:1px">
+        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Ticker</span>
+        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);text-align:right">Held</span>
+        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);text-align:right">P&amp;L</span>
+      </div>` + recentTrades.map((t, i) => {
         const pnlSign = t.pnl >= 0 ? '+' : '';
         const pnlColor = t.pnl >= 0 ? 'var(--green)' : 'var(--red)';
         const holdDays = (t.entryDate && t.exitDate)
           ? Math.round((new Date(t.exitDate + 'T12:00:00') - new Date(t.entryDate + 'T12:00:00')) / 86400000)
           : '?';
-        return `<div style="display:grid;grid-template-columns:52px 40px 1fr;align-items:center;padding:5px 0;border-bottom:1px solid var(--card-border);gap:4px">
-          <span style="font-weight:700;font-family:var(--mono);font-size:13px">${t.ticker}</span>
-          <span style="color:var(--text3);font-size:11px;text-align:center">${holdDays}d</span>
-          <span style="font-weight:700;font-family:var(--mono);font-size:13px;color:${pnlColor};text-align:right">${pnlSign}$${fmt(Math.abs(t.pnl))}</span>
+        const border = i < recentTrades.length - 1 ? 'border-bottom:1px solid var(--card-border)' : '';
+        return `<div style="display:grid;grid-template-columns:${COL_RECENT};align-items:center;padding:5px 0;${border};gap:4px">
+          <span style="font-weight:700;font-family:var(--mono);font-size:12px">${t.ticker}</span>
+          <span style="color:var(--text3);font-size:11px;text-align:right">${holdDays}d</span>
+          <span style="font-weight:700;font-family:var(--mono);font-size:12px;color:${pnlColor};text-align:right">${pnlSign}$${fmt(Math.abs(t.pnl))}</span>
         </div>`;
       }).join('')
     : '<span style="color:var(--text3);font-size:13px">No closed trades yet</span>';
@@ -1997,10 +2007,11 @@ function renderSnapshot(trades, journal) {
   }).filter(Boolean).sort((a, b) => a.gapPct - b.gapPct);
 
   const nearCrossHtml = nearCross.length > 0
-    ? nearCross.map(n => {
+    ? nearCross.map((n, i) => {
         const label = n.approachingBearish ? 'exit signal' : 'cover signal';
         const color = n.approachingBearish ? '#df8e1d' : 'var(--green)';
-        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--card-border)">
+        const borderStyle = i < nearCross.length - 1 ? 'border-bottom:1px solid var(--card-border)' : '';
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;${borderStyle}">
           <span style="font-weight:700;font-family:var(--mono);font-size:13px">${n.ticker}</span>
           <span style="font-size:11px;color:${color}">⚠ ${label} within ${n.gapPct.toFixed(1)}%</span>
         </div>`;
@@ -2028,12 +2039,13 @@ function renderSnapshot(trades, journal) {
       </div>
       <div class="snap-divider"></div>
       <div class="snap-row">
-        <div class="snap-section" style="flex:1;min-width:180px">
+        <div class="snap-section" style="flex:1;min-width:160px">
           <div class="snap-label">Open Positions (${trades.length})</div>
           <div style="margin-top:6px">${openPositionsHtml}</div>
         </div>
-        <div class="snap-section" style="flex:1;min-width:180px">
-          <div class="snap-label">Last 5 Closed Trades</div>
+        <div class="snap-vdivider"></div>
+        <div class="snap-section" style="flex:1;min-width:160px">
+          <div class="snap-label">Last 5 Closed</div>
           <div style="margin-top:6px">${recentHtml}</div>
         </div>
       </div>
@@ -2057,12 +2069,39 @@ function renderDashboard() {
   const screenerCrossCount = state.screenerResults.filter(r => r.trendDays === 0 && !coreAndCustom.includes(r.ticker)).length;
   const newCrossCount = coreCrossCount + screenerCrossCount;
 
-  // Calculate total open risk
+  // Calculate totals
   const pk = getProfileKey();
   const trades = profiles[pk].trades || [];
   const journal = profiles[pk].journal || [];
+  const startEquity = profiles[pk].accountEquity || 0;
   let totalRisk = 0;
   trades.forEach(t => { totalRisk += t.dollarRisk || 0; });
+
+  // Unrealized P&L from open positions
+  let unrealizedPnl = 0;
+  trades.forEach(t => {
+    const d = state.tickerData[t.ticker];
+    if (d) unrealizedPnl += (d.price - t.entryPrice) * (t.totalShares || t.shares || 0);
+  });
+
+  // Realized P&L filtered by period
+  const now = new Date();
+  const pnlPeriod = state.pnlPeriod || 'ALL';
+  let realizedPnl = 0;
+  journal.forEach(t => {
+    if (!t.exitDate) return;
+    const d = new Date(t.exitDate + 'T12:00:00');
+    if (pnlPeriod === 'MTD' && (d.getMonth() !== now.getMonth() || d.getFullYear() !== now.getFullYear())) return;
+    if (pnlPeriod === 'YTD' && d.getFullYear() !== now.getFullYear()) return;
+    realizedPnl += t.pnl || 0;
+  });
+
+  // Total account value = starting equity + all realized + unrealized
+  const allTimeRealized = journal.reduce((s, t) => s + (t.pnl || 0), 0);
+  const accountValue = startEquity + allTimeRealized + unrealizedPnl;
+
+  const fmtPnl = (v) => (v >= 0 ? '+' : '') + '$' + fmt(Math.abs(v));
+  const pnlClass = (v) => v >= 0 ? 'green' : 'red';
 
   content.innerHTML = `
     <div class="screen active" id="screen-dashboard">
@@ -2072,6 +2111,19 @@ function renderDashboard() {
         <div class="summary-card"><div class="label">Short Signals</div><div class="value red">${shortCount}</div></div>
         <div class="summary-card"><div class="label">Open Risk</div><div class="value">${trades.length > 0 ? (totalRisk > 0 ? '$' + fmt(totalRisk) : '--') : '--'}</div></div>
         <div class="summary-card"><div class="label">New Crosses Today</div><div class="value amber">${newCrossCount}</div></div>
+        <div class="summary-card"><div class="label">Unrealized P&amp;L</div><div class="value ${pnlClass(unrealizedPnl)}">${trades.length > 0 ? fmtPnl(unrealizedPnl) : '--'}</div></div>
+        <div class="summary-card"><div class="label">Account Value</div><div class="value">${startEquity > 0 ? '$' + fmt(accountValue) : '--'}</div></div>
+        <div class="summary-card" style="min-width:160px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <div class="label" style="margin:0">Realized P&amp;L</div>
+            <div style="display:flex;gap:3px">
+              <button class="period-btn ${pnlPeriod==='MTD'?'active':''}" onclick="setPnlPeriod('MTD')">MTD</button>
+              <button class="period-btn ${pnlPeriod==='YTD'?'active':''}" onclick="setPnlPeriod('YTD')">YTD</button>
+              <button class="period-btn ${pnlPeriod==='ALL'?'active':''}" onclick="setPnlPeriod('ALL')">All</button>
+            </div>
+          </div>
+          <div class="value ${pnlClass(realizedPnl)}">${journal.length > 0 ? fmtPnl(realizedPnl) : '--'}</div>
+        </div>
       </div>
 
       ${renderSnapshot(trades, journal)}
