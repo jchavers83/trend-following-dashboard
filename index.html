@@ -113,7 +113,19 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
 /* Summary Cards Row */
-.summary-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.summary-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px}
+.snap-card{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:16px 18px;margin-bottom:20px;box-shadow:var(--shadow)}
+.snap-section{padding:4px 0}
+.snap-label{font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);font-weight:600}
+.snap-divider{height:1px;background:var(--card-border);margin:12px 0}
+.snap-row{display:flex;gap:20px;flex-wrap:wrap}
+.snap-regime-pill{font-size:12px;font-weight:700;font-family:var(--mono);padding:3px 9px;border-radius:20px;letter-spacing:0.5px}
+.snap-regime-pill.long{background:rgba(64,160,43,0.15);color:#40a02b;border:1px solid rgba(64,160,43,0.3)}
+.snap-regime-pill.short{background:rgba(210,15,57,0.12);color:#d20f39;border:1px solid rgba(210,15,57,0.25)}
+.snap-regime-pill.neutral{background:var(--surface);color:var(--text3);border:1px solid var(--card-border)}
+.snap-cross-pill{font-size:12px;font-weight:700;font-family:var(--mono);padding:3px 9px;border-radius:6px;letter-spacing:0.3px}
+.snap-cross-pill.long{background:rgba(64,160,43,0.12);color:#40a02b;border:1px solid rgba(64,160,43,0.25)}
+.snap-cross-pill.short{background:rgba(210,15,57,0.1);color:#d20f39;border:1px solid rgba(210,15,57,0.2)}
 .summary-card{background:var(--card);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--card-border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);transition:all var(--transition)}
 .summary-card .label{font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:4px}
 .summary-card .value{font-size:24px;font-weight:700;font-family:var(--mono)}
@@ -1884,6 +1896,108 @@ function renderScreen() {
   }
 }
 
+// ─── SNAPSHOT ───
+function renderSnapshot(trades, journal) {
+  const pk = getProfileKey();
+  const allVisible = [...PERMANENT_TICKERS, ...state.customTickers];
+
+  // ── Regime status ──
+  const qqq = state.tickerData['QQQ'];
+  const spy = state.tickerData['SPY'];
+  const regimeSignals = ['QQQ','SPY'].map(t => {
+    const d = state.tickerData[t];
+    if (!d) return `<span class="snap-regime-pill neutral">${t} –</span>`;
+    const cls = d.signal === 'LONG' ? 'long' : d.signal === 'SHORT' ? 'short' : 'neutral';
+    const arrow = d.signal === 'LONG' ? '▲' : d.signal === 'SHORT' ? '▼' : '–';
+    return `<span class="snap-regime-pill ${cls}">${t} ${arrow}</span>`;
+  }).join('');
+  const regimeOk = qqq?.signal === 'LONG' && spy?.signal === 'LONG';
+  const regimeMsg = (qqq && spy)
+    ? (regimeOk ? 'Market regime: <b style="color:var(--green)">Trend-following ON</b>' : 'Market regime: <b style="color:var(--red)">New entries paused</b>')
+    : 'Market regime: <span style="color:var(--text3)">Loading…</span>';
+
+  // ── New crosses ──
+  const newCrosses = allVisible
+    .map(t => ({ ticker: t, d: state.tickerData[t] }))
+    .filter(({ d }) => d?.isNewCross)
+    .concat(state.screenerResults.filter(r => r.trendDays === 0 && !allVisible.includes(r.ticker)).map(r => ({ ticker: r.ticker, d: { signal: r.trendDir === 'up' ? 'LONG' : 'SHORT', price: r.price } })));
+
+  const crossHtml = newCrosses.length > 0
+    ? newCrosses.map(({ ticker, d }) => {
+        const cls = d.signal === 'LONG' ? 'long' : 'short';
+        const arrow = d.signal === 'LONG' ? '▲' : '▼';
+        return `<span class="snap-cross-pill ${cls}">${arrow} ${ticker} $${fmt(d.price)}</span>`;
+      }).join('')
+    : `<span style="color:var(--text3);font-size:13px">No new crosses today</span>`;
+
+  // ── Open P&L ──
+  let openPnl = 0, winners = 0, losers = 0;
+  trades.forEach(t => {
+    const d = state.tickerData[t.ticker];
+    if (d) {
+      const pnl = (d.price - t.entryPrice) * (t.totalShares || t.shares || 0);
+      openPnl += pnl;
+      pnl >= 0 ? winners++ : losers++;
+    }
+  });
+  const pnlSign = openPnl >= 0 ? '+' : '';
+  const pnlColor = openPnl >= 0 ? 'var(--green)' : 'var(--red)';
+
+  // ── Last closed trade ──
+  const sorted = [...(journal || [])].sort((a, b) => (b.exitDate || '').localeCompare(a.exitDate || ''));
+  const lastTrade = sorted[0];
+  let lastTradeHtml = '<span style="color:var(--text3);font-size:13px">No closed trades yet</span>';
+  if (lastTrade) {
+    const rSign = lastTrade.rMultiple >= 0 ? '+' : '';
+    const rColor = lastTrade.rMultiple >= 0 ? 'var(--green)' : 'var(--red)';
+    const dt = lastTrade.exitDate ? new Date(lastTrade.exitDate + 'T12:00:00').toLocaleDateString('en-US', {month:'numeric',day:'numeric',year:'2-digit'}) : '';
+    lastTradeHtml = `<span style="font-weight:700;font-family:var(--mono)">${lastTrade.ticker}</span>
+      <span style="color:${rColor};font-weight:700;margin-left:6px">${rSign}${lastTrade.rMultiple?.toFixed(2)}R</span>
+      <span style="color:var(--text3);font-size:11px;margin-left:6px">${dt}</span>`;
+  }
+
+  // ── Win streak ──
+  let streak = 0, streakType = '';
+  for (const t of sorted) {
+    if (streak === 0) { streakType = t.rMultiple >= 0 ? 'W' : 'L'; streak = 1; }
+    else if ((t.rMultiple >= 0 && streakType === 'W') || (t.rMultiple < 0 && streakType === 'L')) streak++;
+    else break;
+  }
+  const streakColor = streakType === 'W' ? 'var(--green)' : 'var(--red)';
+  const streakHtml = streak > 0
+    ? `<span style="color:${streakColor};font-weight:700">${streak} ${streakType === 'W' ? 'win' : 'loss'} streak</span>`
+    : '<span style="color:var(--text3)">–</span>';
+
+  return `
+    <div class="snap-card">
+      <div class="snap-section">
+        <div class="snap-label">Market Regime</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px">
+          ${regimeSignals}
+          <span style="font-size:12px;color:var(--text2)">${regimeMsg}</span>
+        </div>
+      </div>
+      <div class="snap-divider"></div>
+      <div class="snap-section">
+        <div class="snap-label">New Crosses Today <span style="color:var(--text3);font-weight:400">(${newCrosses.length})</span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${crossHtml}</div>
+      </div>
+      <div class="snap-divider"></div>
+      <div class="snap-row">
+        <div class="snap-section" style="flex:1;min-width:140px">
+          <div class="snap-label">Open P&amp;L</div>
+          <div style="font-size:20px;font-weight:700;font-family:var(--mono);color:${pnlColor};margin-top:4px">${pnlSign}$${fmt(Math.abs(openPnl))}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">${trades.length} position${trades.length !== 1 ? 's' : ''} · ${winners}W ${losers}L</div>
+        </div>
+        <div class="snap-section" style="flex:1;min-width:140px">
+          <div class="snap-label">Last Closed Trade</div>
+          <div style="margin-top:4px;font-size:14px">${lastTradeHtml}</div>
+          <div style="margin-top:4px;font-size:11px;color:var(--text3)">${streakHtml}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
 // ─── DASHBOARD ───
 function renderDashboard() {
   const content = document.getElementById('content');
@@ -1904,6 +2018,7 @@ function renderDashboard() {
   // Calculate total open risk
   const pk = getProfileKey();
   const trades = profiles[pk].trades || [];
+  const journal = profiles[pk].journal || [];
   let totalRisk = 0;
   trades.forEach(t => { totalRisk += t.dollarRisk || 0; });
 
@@ -1916,6 +2031,8 @@ function renderDashboard() {
         <div class="summary-card"><div class="label">Open Risk</div><div class="value">${trades.length > 0 ? (totalRisk > 0 ? '$' + fmt(totalRisk) : '--') : '--'}</div></div>
         <div class="summary-card"><div class="label">New Crosses Today</div><div class="value amber">${newCrossCount}</div></div>
       </div>
+
+      ${renderSnapshot(trades, journal)}
 
       <div class="section-header"><h2>Core ETFs & Diversifiers</h2><span class="count">${PERMANENT_TICKERS.length} tickers</span></div>
       ${renderSignalTable(PERMANENT_TICKERS)}
