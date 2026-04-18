@@ -2110,7 +2110,6 @@ function renderDashboard() {
         <div class="summary-card"><div class="label">Long Signals</div><div class="value green">${longCount}</div></div>
         <div class="summary-card"><div class="label">Short Signals</div><div class="value red">${shortCount}</div></div>
         <div class="summary-card"><div class="label">Open Risk</div><div class="value">${trades.length > 0 ? (totalRisk > 0 ? '$' + fmt(totalRisk) : '--') : '--'}</div></div>
-        <div class="summary-card"><div class="label">New Crosses Today</div><div class="value amber">${newCrossCount}</div></div>
         <div class="summary-card"><div class="label">Unrealized P&amp;L</div><div class="value ${pnlClass(unrealizedPnl)}">${trades.length > 0 ? fmtPnl(unrealizedPnl) : '--'}</div></div>
         <div class="summary-card"><div class="label">Account Value</div><div class="value">${startEquity > 0 ? '$' + fmt(accountValue) : '--'}</div></div>
         <div class="summary-card" style="min-width:160px">
