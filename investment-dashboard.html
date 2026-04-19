@@ -2442,8 +2442,6 @@ function renderSignalTable(tickers) {
     } else if (days === 1) {
       rowBg = 'background:rgba(249,226,175,0.06);';
       crossCellHtml = '<span style="color:#fab387">1d</span>';
-    } else if (days != null && days > 14) {
-      tickerCellStyle = 'color:var(--text3)';
     }
 
     rows += `<tr onclick="navigateTo('chart',{ticker:'${ticker}'})" style="${rowBg}">
