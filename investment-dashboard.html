@@ -4465,11 +4465,15 @@ function saveSettings() {
 }
 
 // ─── LOGO HELPER ───
+const LOCAL_LOGOS = new Set(['QQQ','SPY','DIA','IWM','IBIT','USO','SLV','GLD','CPER','PPLT']);
+const LOGO_BASE = 'https://jchavers83.github.io/trend-following-dashboard/logos/';
 function tickerLogo(ticker, size = 28) {
-  const fmp = `https://financialmodelingprep.com/image-stock/${ticker}.png`;
-  const fallback = `https://assets.parqet.com/logos/symbol/${ticker}?format=png`;
-  return `<img src="${fmp}" alt="${ticker}" width="${size}" height="${size}" class="ticker-logo" style="width:${size}px;height:${size}px"
-    onerror="if(!this._tried){this._tried=true;this.src='${fallback}'}else{this.style.display='none';this.nextElementSibling.style.display='inline-flex'}"
+  const src = LOCAL_LOGOS.has(ticker)
+    ? `${LOGO_BASE}${ticker}.png`
+    : `https://financialmodelingprep.com/image-stock/${ticker}.png`;
+  const fmpFallback = LOCAL_LOGOS.has(ticker) ? '' : '';
+  return `<img src="${src}" alt="${ticker}" width="${size}" height="${size}" class="ticker-logo" style="width:${size}px;height:${size}px"
+    onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'"
     ><span class="logo-fallback" style="width:${size}px;height:${size}px;display:none">${ticker.slice(0,3)}</span>`;
 }
 
