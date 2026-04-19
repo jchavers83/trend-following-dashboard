@@ -2489,10 +2489,8 @@ function renderSignalGrid(tickers) {
 }
 
 function renderScreenerTable() {
-  // Render as signal cards — same format as core ETFs / diversifiers
-  let cards = '';
+  let rows = '', cards = '';
   state.screenerResults.forEach(r => {
-    // Prefer live tickerData (updates every 10 min); fall back to VPS screener snapshot
     const live = state.tickerData[r.ticker];
     const signal    = live?.signal     ?? r.trendDir ?? 'LONG';
     const crossDays = live?.daysSinceCross ?? r.trendDays;
@@ -2502,23 +2500,36 @@ function renderScreenerTable() {
     const ma20      = live?.ma20       ?? r.ma20;
     const change    = live?.change;
     const changePct = live?.changePct;
-    const name      = live?.name       || '';
+    const name      = live?.name       || r.ticker;
 
     const sigClass = signal === 'LONG' ? 'long' : signal === 'SHORT' ? 'short' : '';
-    const chClass  = change >= 0 ? 'up' : 'down';
+    const chClass  = change != null ? (change >= 0 ? 'up' : 'down') : '';
     const chStr    = change != null
-      ? `<div class="change ${chClass}">${change >= 0 ? '+' : ''}${fmt(change)} (${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%)</div>`
-      : '';
+      ? `${change >= 0 ? '+' : ''}${fmt(change)} (${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%)`
+      : '--';
+    let rowBg = '', crossCellHtml = crossDays != null ? crossDays + 'd' : '--';
+    if (crossDays === 0) { rowBg = 'background:rgba(249,226,175,0.15);'; crossCellHtml = '<strong style="color:#fab387">TODAY</strong>'; }
+    else if (crossDays === 1) { rowBg = 'background:rgba(249,226,175,0.06);'; crossCellHtml = '<span style="color:#fab387">1d</span>'; }
 
+    // Desktop table row
+    rows += `<tr onclick="navigateTo('chart',{ticker:'${r.ticker}'})" style="${rowBg}">
+      <td class="ticker-cell">${r.ticker}${isNewCross ? ' <span style="background:linear-gradient(135deg,#fab387,#f9e2af);color:#1e1e2e;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:800">NEW</span>' : ''}</td>
+      <td style="color:var(--text3);font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</td>
+      <td class="price-cell">$${fmt(price)}</td>
+      <td class="change-cell ${chClass}">${chStr}</td>
+      <td class="ma-cell">${ma10 != null ? ma10.toFixed(2) : '--'}</td>
+      <td class="ma-cell">${ma20 != null ? ma20.toFixed(2) : '--'}</td>
+      <td><span class="signal-badge ${sigClass}">${signal}</span></td>
+      <td style="font-size:12px;color:var(--text3)">${crossCellHtml}</td>
+    </tr>`;
+
+    // Mobile card
     cards += `<div class="signal-card ${sigClass}" onclick="navigateTo('chart',{ticker:'${r.ticker}'})">
       ${isNewCross ? '<div class="new-cross-badge">NEW CROSS</div>' : ''}
-      <div class="ticker-row">
-        <span class="ticker">${r.ticker}</span>
-        <span class="signal-badge ${sigClass}">${signal}</span>
-      </div>
-      ${name ? `<div class="name">${name}</div>` : ''}
+      <div class="ticker-row"><span class="ticker">${r.ticker}</span><span class="signal-badge ${sigClass}">${signal}</span></div>
+      <div class="name">${name}</div>
       <div class="price">$${fmt(price)}</div>
-      ${chStr}
+      ${change != null ? `<div class="change ${chClass}">${change >= 0 ? '+' : ''}${fmt(change)} (${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%)</div>` : ''}
       <div class="ma-info">
         <div><div class="ma-label">MA10</div><div class="ma-val" style="color:#89b4fa">${ma10 != null ? ma10.toFixed(2) : '--'}</div></div>
         <div><div class="ma-label">MA20</div><div class="ma-val" style="color:#94e2d5">${ma20 != null ? ma20.toFixed(2) : '--'}</div></div>
@@ -2526,7 +2537,13 @@ function renderScreenerTable() {
       <div class="days-since">${crossDays != null ? 'Last cross: ' + crossDays + ' days ago' : 'No recent crossover'}</div>
     </div>`;
   });
-  return `<div class="signal-grid">${cards}</div>`;
+
+  return `
+    <div class="signal-table-wrap"><table class="signal-table">
+      <thead><tr><th>Ticker</th><th>Name</th><th>Price</th><th>Day Change</th><th>MA10</th><th>MA20</th><th>Signal</th><th>Cross</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+    <div class="signal-grid">${cards}</div>`;
 }
 
 function removeCustomTicker(ticker) {
