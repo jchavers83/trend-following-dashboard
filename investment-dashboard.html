@@ -595,7 +595,20 @@ function getProfileKey(profile) { return (profile || state.activeProfile).toLowe
 
 function loadProfiles() {
   const saved = localStorage.getItem('tp_profiles');
-  if (saved) return JSON.parse(saved);
+  if (saved) {
+    const parsed = JSON.parse(saved);
+    // Auto-clear any profile that was seeded with demo data
+    let wiped = false;
+    PROFILES.forEach(n => {
+      const pk = n.toLowerCase();
+      if (parsed[pk]?.isDemoData) {
+        parsed[pk] = {trades:[],journal:[],checklist:{},checklistTicker:null,ibkrGatewayUrl:'https://localhost:5000',ibkrAccountId:null,ibkrConnected:false,ibkrPositions:[],ibkrBalance:null,atConnected:false,atTrades:[],atStats:null,atLastSync:null};
+        wiped = true;
+      }
+    });
+    if (wiped) localStorage.setItem('tp_profiles', JSON.stringify(parsed));
+    return parsed;
+  }
   const p = {};
   PROFILES.forEach(n => { p[n.toLowerCase()] = {trades:[],journal:[],checklist:{},checklistTicker:null,ibkrGatewayUrl:'https://localhost:5000',ibkrAccountId:null,ibkrConnected:false,ibkrPositions:[],ibkrBalance:null,atConnected:false,atTrades:[],atStats:null,atLastSync:null}; });
   return p;
