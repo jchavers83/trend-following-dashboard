@@ -398,6 +398,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;
 .signal-table tr{cursor:pointer;transition:background var(--transition)}
 .signal-table tr:hover{background:var(--surface)}
 .signal-table .ticker-cell{font-weight:700;font-family:var(--mono);font-size:14px;letter-spacing:-0.01em}
+.ticker-logo{width:28px;height:28px;border-radius:6px;object-fit:contain;background:var(--surface);border:1px solid var(--card-border);flex-shrink:0}
+.ticker-logo-wrap{display:flex;align-items:center;gap:8px}
+.logo-fallback{width:28px;height:28px;border-radius:6px;background:var(--surface);border:1px solid var(--card-border);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text3);font-family:var(--mono);flex-shrink:0}
 .signal-table .price-cell{font-family:var(--mono);font-weight:600;font-variant-numeric:tabular-nums}
 .signal-table .change-cell{font-family:var(--mono);font-weight:600;font-variant-numeric:tabular-nums}
 .signal-table .change-cell.up{color:#40a02b}
@@ -2445,7 +2448,7 @@ function renderSignalTable(tickers) {
     }
 
     rows += `<tr onclick="navigateTo('chart',{ticker:'${ticker}'})" style="${rowBg}">
-      <td class="ticker-cell" style="${tickerCellStyle}">${ticker}${d.isNewCross ? ' <span style="background:linear-gradient(135deg,#fab387,#f9e2af);color:#1e1e2e;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:800">NEW</span>' : ''}</td>
+      <td class="ticker-cell" style="${tickerCellStyle}"><div class="ticker-logo-wrap">${tickerLogo(ticker)}<span>${ticker}${d.isNewCross ? ' <span style="background:linear-gradient(135deg,#fab387,#f9e2af);color:#1e1e2e;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:800">NEW</span>' : ''}</span></div></td>
       <td style="color:var(--text3);font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.name || ''}</td>
       <td class="price-cell">$${fmt(d.price)}</td>
       <td class="change-cell ${chClass}">${d.change>=0?'+':''}${fmt(d.change)} (${d.changePct>=0?'+':''}${d.changePct.toFixed(2)}%)</td>
@@ -2474,7 +2477,7 @@ function renderSignalGrid(tickers) {
     const chClass = d.change >= 0 ? 'up' : 'down';
     cards += `<div class="signal-card ${sigClass}" onclick="navigateTo('chart',{ticker:'${ticker}'})">
       ${d.isNewCross ? '<div class="new-cross-badge">NEW CROSS</div>' : ''}
-      <div class="ticker-row"><span class="ticker">${ticker}</span><span class="signal-badge ${d.signal.toLowerCase()}">${d.signal}</span></div>
+      <div class="ticker-row"><div style="display:flex;align-items:center;gap:8px">${tickerLogo(ticker)}<span class="ticker">${ticker}</span></div><span class="signal-badge ${d.signal.toLowerCase()}">${d.signal}</span></div>
       <div class="name">${d.name || ticker}</div>
       <div class="price">$${fmt(d.price)}</div>
       <div class="change ${chClass}">${d.change>=0?'+':''}${fmt(d.change)} (${d.changePct>=0?'+':''}${d.changePct.toFixed(2)}%)</div>
@@ -2513,7 +2516,7 @@ function renderScreenerTable() {
 
     // Desktop table row
     rows += `<tr onclick="navigateTo('chart',{ticker:'${r.ticker}'})" style="${rowBg}">
-      <td class="ticker-cell">${r.ticker}${isNewCross ? ' <span style="background:linear-gradient(135deg,#fab387,#f9e2af);color:#1e1e2e;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:800">NEW</span>' : ''}</td>
+      <td class="ticker-cell"><div class="ticker-logo-wrap">${tickerLogo(r.ticker)}<span>${r.ticker}${isNewCross ? ' <span style="background:linear-gradient(135deg,#fab387,#f9e2af);color:#1e1e2e;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:800">NEW</span>' : ''}</span></div></td>
       <td style="color:var(--text3);font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</td>
       <td class="price-cell">$${fmt(price)}</td>
       <td class="change-cell ${chClass}">${chStr}</td>
@@ -2526,7 +2529,7 @@ function renderScreenerTable() {
     // Mobile card
     cards += `<div class="signal-card ${sigClass}" onclick="navigateTo('chart',{ticker:'${r.ticker}'})">
       ${isNewCross ? '<div class="new-cross-badge">NEW CROSS</div>' : ''}
-      <div class="ticker-row"><span class="ticker">${r.ticker}</span><span class="signal-badge ${sigClass}">${signal}</span></div>
+      <div class="ticker-row"><div style="display:flex;align-items:center;gap:8px">${tickerLogo(r.ticker)}<span class="ticker">${r.ticker}</span></div><span class="signal-badge ${sigClass}">${signal}</span></div>
       <div class="name">${name}</div>
       <div class="price">$${fmt(price)}</div>
       ${change != null ? `<div class="change ${chClass}">${change >= 0 ? '+' : ''}${fmt(change)} (${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%)</div>` : ''}
@@ -4398,6 +4401,14 @@ function saveSettings() {
   saveProfiles(profiles);
   showToast('Settings saved');
   renderNav(); // updates heat gauge
+}
+
+// ─── LOGO HELPER ───
+function tickerLogo(ticker, size = 28) {
+  const url = `https://financialmodelingprep.com/image-stock/${ticker}.png`;
+  return `<img src="${url}" alt="${ticker}" width="${size}" height="${size}" class="ticker-logo"
+    onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'"
+    ><span class="logo-fallback" style="width:${size}px;height:${size}px;display:none">${ticker.slice(0,3)}</span>`;
 }
 
 // ─── UTILS ───
