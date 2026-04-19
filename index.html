@@ -398,9 +398,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;
 .signal-table tr{cursor:pointer;transition:background var(--transition)}
 .signal-table tr:hover{background:var(--surface)}
 .signal-table .ticker-cell{font-weight:700;font-family:var(--mono);font-size:14px;letter-spacing:-0.01em}
-.ticker-logo{width:28px;height:28px;border-radius:6px;object-fit:contain;background:var(--surface);border:1px solid var(--card-border);flex-shrink:0}
+.ticker-logo{width:28px;height:28px;border-radius:50%;object-fit:contain;background:var(--surface);border:1px solid var(--card-border);flex-shrink:0}
 .ticker-logo-wrap{display:flex;align-items:center;gap:8px}
-.logo-fallback{width:28px;height:28px;border-radius:6px;background:var(--surface);border:1px solid var(--card-border);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text3);font-family:var(--mono);flex-shrink:0}
+.logo-fallback{width:28px;height:28px;border-radius:50%;background:var(--surface);border:1px solid var(--card-border);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text3);font-family:var(--mono);flex-shrink:0}
 .signal-table .price-cell{font-family:var(--mono);font-weight:600;font-variant-numeric:tabular-nums}
 .signal-table .change-cell{font-family:var(--mono);font-weight:600;font-variant-numeric:tabular-nums}
 .signal-table .change-cell.up{color:#40a02b}
@@ -1071,6 +1071,64 @@ function mapVPSResult(r) {
     marketCap: r.marketCap,
     avgVol30d: r.avgVol30d
   };
+}
+
+// ─── VPS PORTFOLIO SYNC ───
+// Pulls live equity + AutoTrader trades for each profile from the VPS API.
+// Equity updates every 10-min cycle during market hours.
+// Trades accumulate as the AutoTrader executes.
+async function loadVPSPortfolio() {
+  try {
+    // Fetch equity for all accounts
+    const eqResp = await fetch(AT_API + '/api/equity', { signal: AbortSignal.timeout(8000) });
+    if (eqResp.ok) {
+      const eqData = await eqResp.json();
+      for (const [accountId, info] of Object.entries(eqData)) {
+        const pk = accountId.toLowerCase();
+        if (profiles[pk] && info.equity) {
+          profiles[pk].accountEquity = info.equity;
+          profiles[pk].atEquityUpdatedAt = info.updatedAt;
+          profiles[pk].atConnected = true;
+        }
+      }
+    }
+    // Fetch open + closed trades for each profile
+    for (const name of PROFILES) {
+      const pk = name.toLowerCase();
+      try {
+        const r = await fetch(AT_API + '/api/portfolio/' + pk, { signal: AbortSignal.timeout(8000) });
+        if (!r.ok) continue;
+        const data = await r.json();
+        // Map AutoTrader DB trade format → dashboard trade format
+        const mapTrade = t => ({
+          id: 'at_' + t.id,
+          ticker: t.ticker,
+          direction: t.direction,
+          shares: t.shares,
+          entryPrice: t.entry_price,
+          stopPrice: t.stop_price,
+          entryDate: t.entry_date,
+          exitDate: t.exit_date,
+          exitPrice: t.exit_price,
+          status: t.status,
+          pnl: t.realized_pnl,
+          source: 'autotrader'
+        });
+        profiles[pk].atTrades = [...(data.open || []), ...(data.closed || [])].map(mapTrade);
+        profiles[pk].atLastSync = new Date().toISOString();
+        if (data.equity) {
+          profiles[pk].accountEquity = data.equity;
+          profiles[pk].atConnected = true;
+        }
+      } catch(_) {}
+    }
+    saveProfiles(profiles);
+    if (state.activeScreen === 'dashboard' || state.activeScreen === 'portfolio') {
+      renderScreen();
+    }
+  } catch(e) {
+    console.warn('[VPS Portfolio] Sync failed:', e.message);
+  }
 }
 
 async function loadVPSScreener() {
@@ -2628,9 +2686,12 @@ function renderChartScreen() {
         <button class="back-btn" onclick="navigateTo('dashboard')">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
         </button>
-        <div class="chart-ticker-block">
-          <span class="chart-ticker">${ticker}</span>
-          <span class="chart-name">${d ? d.name || '' : ''}</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          ${tickerLogo(ticker, 36)}
+          <div class="chart-ticker-block">
+            <span class="chart-ticker">${ticker}</span>
+            <span class="chart-name">${d ? d.name || '' : ''}</span>
+          </div>
         </div>
         <div class="chart-stats">
           <div class="chart-stat">
@@ -4823,19 +4884,21 @@ async function init() {
   refreshAllTickers();
   atSyncAll();
 
-  // Load screener results from VPS after initial render (3s delay)
+  // Load screener + portfolio/equity from VPS after initial render
   setTimeout(() => {
     loadVPSScreener().then(r => {
       if (r && state.activeScreen === 'dashboard') renderDashboard();
     });
+    loadVPSPortfolio();
   }, 3000);
 
-  // Refresh screener from VPS every 6 hours while page is open
+  // Refresh screener every 6 hours, portfolio/equity every 10 min
   setInterval(() => {
     loadVPSScreener().then(r => {
       if (r && state.activeScreen === 'dashboard') renderDashboard();
     });
   }, 21600000);
+  setInterval(() => loadVPSPortfolio(), 600000);
 
   // Auto-refresh every 10 minutes (includes AutoTrader sync)
   setInterval(() => {
