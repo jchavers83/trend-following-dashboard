@@ -539,8 +539,7 @@ const PERMANENT_TICKERS = [...CORE_TICKERS, ...DIVERSIFIERS];
 const SCREENS = [
   {id:'dashboard',label:'Signals',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>'},
   {id:'chart',label:'Chart',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>'},
-  {id:'calculator',label:'Size Calc',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="14" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/></svg>'},
-  {id:'portfolio',label:'Portfolio',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>'},
+{id:'portfolio',label:'Portfolio',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>'},
 {id:'journal',label:'Journal',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>'},
 {id:'settings',label:'Settings',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'}
 ];
@@ -2032,12 +2031,11 @@ function updateBotStatus() {
 }
 
 function renderNav() {
-  // Compute signal counts for badge
+  // Compute signal counts for badge — all loaded tickers, matches header card
   let longCount = 0, shortCount = 0;
-  PERMANENT_TICKERS.forEach(t => {
-    const sig = state.tickerData[t]?.signal;
-    if (sig === 'LONG') longCount++;
-    else if (sig === 'SHORT') shortCount++;
+  Object.values(state.tickerData).forEach(d => {
+    if (d.signal === 'LONG') longCount++;
+    else if (d.signal === 'SHORT') shortCount++;
   });
 
   // Sidebar nav
@@ -4466,10 +4464,11 @@ function saveSettings() {
 
 // ─── LOGO HELPER ───
 function tickerLogo(ticker, size = 28) {
+  const local = `./logos/${ticker}.png`;
   const fmp = `https://financialmodelingprep.com/image-stock/${ticker}.png`;
   const fallback = `https://assets.parqet.com/logos/symbol/${ticker}?format=png`;
-  return `<img src="${fmp}" alt="${ticker}" width="${size}" height="${size}" class="ticker-logo" style="width:${size}px;height:${size}px"
-    onerror="if(!this._tried){this._tried=true;this.src='${fallback}'}else{this.style.display='none';this.nextElementSibling.style.display='inline-flex'}"
+  return `<img src="${local}" alt="${ticker}" width="${size}" height="${size}" class="ticker-logo" style="width:${size}px;height:${size}px"
+    onerror="if(!this._t1){this._t1=true;this.src='${fmp}'}else if(!this._t2){this._t2=true;this.src='${fallback}'}else{this.style.display='none';this.nextElementSibling.style.display='inline-flex'}"
     ><span class="logo-fallback" style="width:${size}px;height:${size}px;display:none">${ticker.slice(0,3)}</span>`;
 }
 
