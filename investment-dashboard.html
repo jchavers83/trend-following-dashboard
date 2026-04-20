@@ -800,8 +800,9 @@ function findCrossovers(ma10Arr, ma20Arr, timestamps) {
 function getSignalInfo(closes, timestamps) {
   const ma10Arr = calcSMAArray(closes, 10);
   const ma20Arr = calcSMAArray(closes, 20);
-  const ma10 = ma10Arr[ma10Arr.length-1];
-  const ma20 = ma20Arr[ma20Arr.length-1];
+  // Fall back to null-tolerant calcSMA so a single missing bar doesn't blank the signal
+  const ma10 = ma10Arr[ma10Arr.length-1] ?? calcSMA(closes, 10);
+  const ma20 = ma20Arr[ma20Arr.length-1] ?? calcSMA(closes, 20);
   const crosses = findCrossovers(ma10Arr, ma20Arr, timestamps);
   let signal = 'NEUTRAL', daysSinceCross = null, isNewCross = false;
   if (ma10 != null && ma20 != null) {
