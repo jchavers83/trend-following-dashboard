@@ -2113,8 +2113,6 @@ function switchProfile(profile) {
 }
 
 function renderScreen() {
-  const content = document.getElementById('content');
-  content.scrollTop = 0;
   switch(state.activeScreen) {
     case 'dashboard': renderDashboard(); break;
     case 'chart': renderChartScreen(); break;
