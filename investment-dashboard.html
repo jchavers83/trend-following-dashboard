@@ -101,8 +101,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;
 .content::-webkit-scrollbar-thumb{background:var(--text3);border-radius:3px}
 
 /* Bottom Nav - Mobile */
-.botnav{display:none;height:var(--botnav-h);background:var(--card);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--card-border);padding:0 4px env(safe-area-inset-bottom);z-index:100}
-.botnav-inner{display:flex;height:100%;align-items:center}
+.botnav{display:none;height:calc(var(--botnav-h) + env(safe-area-inset-bottom,0px));background:var(--card);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--card-border);padding:0 4px;z-index:100}
+.botnav-inner{display:flex;height:var(--botnav-h);align-items:center}
 .botnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 2px;border:none;background:none;color:var(--text3);font-size:10px;font-weight:500;cursor:pointer;transition:all var(--transition);font-family:var(--sans);-webkit-tap-highlight-color:transparent}
 .botnav-item.active{color:var(--text);font-weight:700}
 .botnav-item svg{width:20px;height:20px}
@@ -365,14 +365,14 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;
   .content{padding:14px}
   .summary-row{grid-template-columns:1fr 1fr}
   .signal-grid{grid-template-columns:1fr}
-  .chart-canvas-wrap{height:calc(100dvh - var(--botnav-h) - 200px);min-height:380px}
+  .chart-canvas-wrap{height:300px;min-height:260px}
   .chart-stats{gap:12px;border-left:none;border-right:none;padding:6px 0}
   .chart-header{flex-wrap:wrap;gap:10px}
   .calc-outputs{grid-template-columns:1fr}
   .journal-summary{grid-template-columns:1fr 1fr}
   .trade-card .trade-stats{grid-template-columns:1fr 1fr}
   .chart-info-grid{grid-template-columns:1fr 1fr}
-  .toast{bottom:calc(var(--botnav-h) + 12px)}
+  .toast{bottom:calc(var(--botnav-h) + env(safe-area-inset-bottom,0px) + 12px)}
 }
 @media(min-width:769px){
   .header-title-mobile{display:none}
@@ -2785,7 +2785,7 @@ function renderChartScreen() {
       }
       chartEngine.setOverlays(overlays);
     } else if (!d) {
-      loadTickerData(ticker).then(() => renderChartScreen());
+      loadTickerData(ticker).then(() => { renderChartScreen(); document.getElementById('content').scrollTop = 0; });
     }
   }
 }
