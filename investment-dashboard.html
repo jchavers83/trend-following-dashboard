@@ -539,7 +539,6 @@ const PERMANENT_TICKERS = [...CORE_TICKERS, ...DIVERSIFIERS];
 const SCREENS = [
   {id:'dashboard',label:'Signals',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>'},
   {id:'chart',label:'Chart',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>'},
-  {id:'calculator',label:'Size Calc',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="14" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/></svg>'},
   {id:'portfolio',label:'Portfolio',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>'},
 {id:'journal',label:'Journal',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>'},
 {id:'settings',label:'Settings',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'}
@@ -687,7 +686,7 @@ function loadCustomTickers() {
   const s = localStorage.getItem('tp_custom_tickers');
   return s ? JSON.parse(s) : [];
 }
-function saveCustomTickers() { localStorage.setItem('tp_custom_tickers', state.customTickers); }
+function saveCustomTickers() { localStorage.setItem('tp_custom_tickers', JSON.stringify(state.customTickers)); }
 
 state.customTickers = loadCustomTickers();
 state.darkMode = localStorage.getItem('tp_dark') === '1';
@@ -810,13 +809,9 @@ function getSignalInfo(closes, timestamps) {
   }
   if (crosses.length > 0) {
     const last = crosses[crosses.length - 1];
-    // Count trading days (bars) since last crossover, not calendar days
-    // This matches TradingView's bar-based counting
+    // Count trading days (bars) since last crossover — matches TradingView's bar-based counting
     daysSinceCross = closes.length - 1 - last.index;
-    const lastTs = last.timestamp * 1000;
-    const today = new Date();
-    const crossDate = new Date(lastTs);
-    isNewCross = crossDate.toDateString() === today.toDateString() || daysSinceCross === 0;
+    isNewCross = daysSinceCross === 0;
   }
   return {ma10, ma20, signal, daysSinceCross, isNewCross, ma10Arr, ma20Arr, crosses};
 }
@@ -1186,132 +1181,6 @@ async function runScreener() {
   state.screenerRunning = false;
   if (state.activeScreen === 'dashboard') renderDashboard();
 }
-
-// ── DEAD CODE BELOW — replaced by VPS screener above ──────────────────────
-// Kept for reference only. The functions below (fetchFMPCandidates,
-// fetchQuickScreen, fetchFMPFundamentals, loadScreenCache, saveScreenCache)
-// are no longer called. Remove in a future cleanup pass.
-
-async function _OLD_runScreener() {
-  if (state.screenerRunning) return;
-  state.screenerRunning = true;
-  state.screenerProgress = 0;
-  if (state.activeScreen === 'dashboard') renderDashboard();
-
-  // Clear stale null fundamental cache entries so this run re-fetches them
-  try {
-    Object.keys(localStorage).filter(k => k.startsWith('tp_fmp_fund_')).forEach(k => {
-      const d = JSON.parse(localStorage.getItem(k) || '{}');
-      if (!d.data || (d.data.epsGrowth == null && d.data.revenueGrowth == null)) {
-        localStorage.removeItem(k);
-      }
-    });
-  } catch(_) {}
-
-  // ── Phase 1: Get candidate universe (FMP screener → whole market, or fallback) ──
-  showToast('Building candidate universe...');
-  const candidates = await fetchFMPCandidates();
-  console.log(`[Screener] Scanning ${candidates.length} stocks`);
-
-  // ── Phase 2: Yahoo MA signal + price data for all candidates ──
-  const cache = loadScreenCache();
-  const now = Date.now();
-  const YAHOO_TTL = 3600000; // 1h
-  const needsFetch = candidates.filter(t => !cache[t] || (now - cache[t].ts) > YAHOO_TTL);
-  showToast(`Scanning ${candidates.length} stocks (${needsFetch.length} need refresh)...`);
-
-  const batchSize = 8;
-  for (let i = 0; i < needsFetch.length; i += batchSize) {
-    const batch = needsFetch.slice(i, i + batchSize);
-    const results = await Promise.all(batch.map(t => fetchQuickScreen(t)));
-    results.forEach((r, j) => { if (r) cache[batch[j]] = r; });
-    state.screenerProgress = Math.round((i / Math.max(needsFetch.length, 1)) * 50);
-    if (state.activeScreen === 'dashboard') renderScreenerProgress();
-    if (i + batchSize < needsFetch.length) await new Promise(r => setTimeout(r, 300));
-  }
-  saveScreenCache(cache);
-
-  // Pre-filter: liquidity + size only (perf6m applied after fundamentals so it shows in table)
-  const preCandidates = candidates.filter(t => {
-    const d = cache[t];
-    if (!d) return false;
-    if (d.avgVol > 0 && d.avgVol < 500000) return false;          // Avg Volume 30D > 500K
-    if (d.marketCap > 0 && d.marketCap < 2e9) return false;       // Market cap > $2B
-    return true;
-  });
-  console.log(`[Screener] Pre-filter: ${preCandidates.length} stocks pass size/volume/perf filters`);
-  showToast(`${preCandidates.length} stocks pass size filters — fetching EPS/revenue growth...`);
-
-  // ── Phase 3: FMP fundamentals — cap at 100 to stay within 250 calls/day free tier ──
-  // (100 stocks × 2 endpoints = 200 calls + ~2 for universe = 202 total)
-  const toCheck = [...preCandidates]
-    .sort((a, b) => (cache[b]?.perf6m || 0) - (cache[a]?.perf6m || 0)) // strongest 6M first
-    .slice(0, 100);
-
-  console.log(`[Screener] Fetching fundamentals for ${toCheck.length} stocks...`);
-  showToast(`Fetching fundamentals for ${toCheck.length} stocks...`);
-
-  const batchSize2 = 5;
-  for (let i = 0; i < toCheck.length; i += batchSize2) {
-    const batch = toCheck.slice(i, i + batchSize2);
-    await Promise.all(batch.map(t => fetchFMPFundamentals(t)));
-    state.screenerProgress = 50 + Math.round((i / Math.max(toCheck.length, 1)) * 45);
-    if (state.activeScreen === 'dashboard') renderScreenerProgress();
-    if (i + batchSize2 < toCheck.length) await new Promise(r => setTimeout(r, 200));
-  }
-
-  // Log a sample to verify field names are resolving correctly
-  if (toCheck[0]) {
-    console.log(`[Screener] Sample fundamentals (${toCheck[0]}):`, JSON.stringify(fmpCacheGet(`tp_fmp_fund_${toCheck[0]}`, 86400000)));
-  }
-
-  const withData = toCheck.filter(t => {
-    const f = fmpCacheGet(`tp_fmp_fund_${t}`, 86400000);
-    return f && f.epsGrowth != null && f.revenueGrowth != null;
-  });
-  console.log(`[Screener] Complete fundamental data for ${withData.length}/${toCheck.length} stocks`);
-  showToast(`Fundamentals loaded — applying all 7 filters...`);
-
-  // ── Phase 4: All 7 criteria — strict AND logic, missing data = excluded ──
-  const qualified = [];
-  for (const ticker of toCheck) {
-    const tech = cache[ticker];
-    if (!tech) continue;
-
-    const f = fmpCacheGet(`tp_fmp_fund_${ticker}`, 86400000);
-    if (!f) { console.log(`[Filter] ${ticker}: no fundamental data`); continue; }
-
-    const { epsGrowth, revenueGrowth, roe, operatingMargin } = f;
-
-    // All 7 criteria must pass — null data means excluded
-    if (epsGrowth       == null || epsGrowth       < 0.50) continue; // EPS dil growth Qtrly YoY > 50%
-    if (revenueGrowth   == null || revenueGrowth   < 0.25) continue; // Revenue growth Qtrly YoY > 25%
-    if (roe             == null || roe             < 0.17) continue; // ROE TTM > 17%
-    if (operatingMargin == null || operatingMargin < 0)    continue; // Operating margin TTM > 0%
-    if (tech.perf6m < 20)                                  continue; // 6M performance > 20%
-    // Volume > 500K and mktcap > $2B enforced in pre-filter above
-
-    qualified.push({ ticker, price: tech.price, trendDir: tech.trendDir, trendDays: tech.trendDays, atr: tech.atr, perf6m: tech.perf6m, epsGrowth, revenueGrowth, roe, operatingMargin });
-  }
-
-  // LONG signals first, then by trendDays ascending (freshest crosses first), then EPS growth descending
-  qualified.sort((a, b) => {
-    if (a.trendDir === 'LONG' && b.trendDir !== 'LONG') return -1;
-    if (b.trendDir === 'LONG' && a.trendDir !== 'LONG') return 1;
-    if (a.trendDir === 'LONG' && b.trendDir === 'LONG') return (a.trendDays ?? 999) - (b.trendDays ?? 999);
-    return b.epsGrowth - a.epsGrowth;
-  });
-
-  state.screenerResults = qualified; // All qualifying stocks — no cap
-  state.screenerRunning = false;
-  state.screenerProgress = 100;
-
-  localStorage.setItem('tp_screener', JSON.stringify({ results: state.screenerResults, timestamp: Date.now() }));
-
-  if (state.activeScreen === 'dashboard') renderDashboard();
-  showToast(`CANSLIM screen complete — ${qualified.length} qualify`);
-} // end _OLD_runScreener
-
 function loadCachedScreener() {
   const s = localStorage.getItem('tp_screener');
   if (!s) return false; // no cache → needs run
@@ -2033,10 +1902,10 @@ function updateBotStatus() {
 }
 
 function renderNav() {
-  // Compute signal counts for badge
+  // Compute signal counts for badge — scope must match the Signals screen header stat
   let longCount = 0, shortCount = 0;
-  PERMANENT_TICKERS.forEach(t => {
-    const sig = state.tickerData[t]?.signal;
+  getAllTickers().forEach(t => {
+    const sig = state.tickerData[t]?.signal ?? state.screenerResults.find(r => r.ticker === t)?.trendDir;
     if (sig === 'LONG') longCount++;
     else if (sig === 'SHORT') shortCount++;
   });
