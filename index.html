@@ -1098,22 +1098,8 @@ async function loadVPSPortfolio() {
         const r = await fetch(AT_API + '/api/portfolio/' + pk, { signal: AbortSignal.timeout(8000) });
         if (!r.ok) continue;
         const data = await r.json();
-        // Map AutoTrader DB trade format → dashboard trade format
-        const mapTrade = t => ({
-          id: 'at_' + t.id,
-          ticker: t.ticker,
-          direction: t.direction,
-          shares: t.shares,
-          entryPrice: t.entry_price,
-          stopPrice: t.stop_price,
-          entryDate: t.entry_date,
-          exitDate: t.exit_date,
-          exitPrice: t.exit_price,
-          status: t.status,
-          pnl: t.realized_pnl,
-          source: 'autotrader'
-        });
-        profiles[pk].atTrades = [...(data.open || []), ...(data.closed || [])].map(mapTrade);
+        // Store raw snake_case API data (renderer reads t.entry_price, t.stop_price, etc.)
+        profiles[pk].atTrades = data.open || [];
         profiles[pk].atLastSync = new Date().toISOString();
         if (data.equity) {
           profiles[pk].accountEquity = data.equity;
