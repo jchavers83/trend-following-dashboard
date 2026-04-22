@@ -4104,7 +4104,7 @@ function renderIBKRSection(pk) {
         const pctColor = pctGain === null ? 'var(--text2)' : pctGain >= 0 ? '#26a69a' : '#ef5350';
         const currentPriceStr = currentPrice ? `$${currentPrice.toFixed(2)}` : '—';
         const pctGainStr = pctGain !== null ? `${pctGain >= 0 ? '+' : ''}${pctGain.toFixed(2)}%` : '—';
-        html += `<div class="ibkr-pos-card">
+        html += `<div class="ibkr-pos-card" onclick="navigateTo('chart',{ticker:'${t.ticker}'})" style="cursor:pointer">
           <div class="pos-header">
             <div style="display:flex;align-items:center;gap:8px">
               <span class="pos-ticker">${t.ticker}</span>
