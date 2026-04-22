@@ -2301,10 +2301,8 @@ function renderSnapshot(trades, journal) {
     : '<span style="color:var(--text3);font-size:13px">No closed trades yet</span>';
 
   // ── Near-cross watch (open positions within 5% of a MA crossover) ──
-  const allOpenForCross = [...trades, ...(profiles[pk].atTrades || []).map(t => ({
-    ticker: t.ticker, entryPrice: +t.entry_price, direction: t.direction
-  }))];
-  const nearCross = allOpenForCross.map(t => {
+  // trades already contains both manual + AT trades (merged in renderDashboard)
+  const nearCross = trades.map(t => {
     const d = state.tickerData[t.ticker];
     if (!d || !d.ma10 || !d.ma20) return null;
     const gapPct = Math.abs(d.ma10 - d.ma20) / d.ma20 * 100;
