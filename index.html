@@ -4097,6 +4097,13 @@ function renderIBKRSection(pk) {
         const daysHeld = Math.floor((Date.now() - new Date(t.entry_date).getTime()) / 86400000);
         const riskPct = t.account_equity_at_entry > 0 ? (t.initial_dollar_risk / t.account_equity_at_entry * 100).toFixed(1) : '—';
         const layers = t.layers_filled > 0 ? `<span style="font-size:10px;background:rgba(137,180,250,0.15);color:var(--blue);padding:2px 6px;border-radius:3px;font-weight:700">L${t.layers_filled}</span>` : '';
+        const liveData = state.tickerData[t.ticker];
+        const currentPrice = liveData ? liveData.price : null;
+        const entryP = +t.entry_price;
+        const pctGain = (currentPrice && entryP) ? ((currentPrice - entryP) / entryP * 100) : null;
+        const pctColor = pctGain === null ? 'var(--text2)' : pctGain >= 0 ? '#26a69a' : '#ef5350';
+        const currentPriceStr = currentPrice ? `$${currentPrice.toFixed(2)}` : '—';
+        const pctGainStr = pctGain !== null ? `${pctGain >= 0 ? '+' : ''}${pctGain.toFixed(2)}%` : '—';
         html += `<div class="ibkr-pos-card">
           <div class="pos-header">
             <div style="display:flex;align-items:center;gap:8px">
@@ -4104,11 +4111,15 @@ function renderIBKRSection(pk) {
               <span class="ibkr-badge">${t.direction}</span>
               ${layers}
             </div>
-            <span style="font-size:11px;color:var(--text3)">${daysHeld}d held</span>
+            <div style="display:flex;align-items:center;gap:10px">
+              ${currentPrice ? `<span style="font-size:13px;font-weight:600;font-family:var(--mono)">${currentPriceStr}</span>` : ''}
+              ${pctGain !== null ? `<span style="font-size:12px;font-weight:700;color:${pctColor}">${pctGainStr}</span>` : ''}
+              <span style="font-size:11px;color:var(--text3)">${daysHeld}d held</span>
+            </div>
           </div>
           <div class="pos-stats">
             <div class="stat"><div class="label">Shares</div><div class="val">${(+t.shares).toFixed(2)}</div></div>
-            <div class="stat"><div class="label">Entry</div><div class="val">$${(+t.entry_price).toFixed(2)}</div></div>
+            <div class="stat"><div class="label">Entry</div><div class="val">$${entryP.toFixed(2)}</div></div>
             <div class="stat"><div class="label">Stop</div><div class="val" style="color:var(--red)">$${(+t.stop_price).toFixed(2)}</div></div>
             <div class="stat"><div class="label">$ at Risk</div><div class="val">$${fmt(t.initial_dollar_risk)}</div></div>
             <div class="stat"><div class="label">Risk %</div><div class="val">${riskPct}%</div></div>
