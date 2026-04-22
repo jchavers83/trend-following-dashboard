@@ -1983,6 +1983,7 @@ function renderHeatGauge() {
   if (!container) return;
   const pk = getProfileKey();
   const trades = (profiles[pk].trades || []).filter(t => !t.closed);
+  const atTrades = profiles[pk].atTrades || [];
   const equity = profiles[pk].accountEquity || 100000;
   const maxHeat = profiles[pk].maxPortfolioHeat || 10;
 
@@ -1990,6 +1991,9 @@ function renderHeatGauge() {
   trades.forEach(t => {
     const riskPerShare = (t.entryPrice || 0) - (t.stopPrice || 0);
     totalRisk += riskPerShare * (t.totalShares || 0);
+  });
+  atTrades.forEach(t => {
+    totalRisk += t.initial_dollar_risk || 0;
   });
   const heatPct = equity > 0 ? (totalRisk / equity) * 100 : 0;
   const fillPct = Math.min((heatPct / maxHeat) * 100, 100);
