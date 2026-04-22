@@ -2015,8 +2015,11 @@ function renderHeatGauge() {
 function updateBotStatus() {
   const widget = document.getElementById('botStatusWidget');
   if (!widget) return;
-  const lastPing = localStorage.getItem('cp_bot_last_ping');
-  const isActive = lastPing && (Date.now() - parseInt(lastPing, 10)) < 300000;
+  const pk = getProfileKey();
+  const atConnected = profiles[pk]?.atConnected;
+  const lastSync = profiles[pk]?.atLastSync;
+  const recentSync = lastSync && (Date.now() - new Date(lastSync).getTime()) < 900000; // 15 min
+  const isActive = atConnected && recentSync;
   widget.innerHTML = `<span class="bot-dot ${isActive ? 'active' : 'offline'}"></span>${isActive ? 'Bot Active' : 'Bot Offline'}`;
 }
 
@@ -2298,7 +2301,10 @@ function renderSnapshot(trades, journal) {
     : '<span style="color:var(--text3);font-size:13px">No closed trades yet</span>';
 
   // ── Near-cross watch (open positions within 5% of a MA crossover) ──
-  const nearCross = trades.map(t => {
+  const allOpenForCross = [...trades, ...(profiles[pk].atTrades || []).map(t => ({
+    ticker: t.ticker, entryPrice: +t.entry_price, direction: t.direction
+  }))];
+  const nearCross = allOpenForCross.map(t => {
     const d = state.tickerData[t.ticker];
     if (!d || !d.ma10 || !d.ma20) return null;
     const gapPct = Math.abs(d.ma10 - d.ma20) / d.ma20 * 100;
@@ -3897,11 +3903,15 @@ function buildSystemHealth(pk) {
     ? losses.reduce((s,t)=>s+Math.max(1,Math.round((new Date(t.exitDate)-new Date(t.entryDate))/86400000)),0)/losses.length
     : 0;
 
-  // Open P&L
+  // Open P&L (manual + AT trades)
   let openPnl = 0;
   openTrades.forEach(t => {
     const d = state.tickerData[t.ticker];
     if (d) openPnl += (d.price - t.entryPrice) * t.totalShares;
+  });
+  (profiles[pk].atTrades || []).forEach(t => {
+    const d = state.tickerData[t.ticker];
+    if (d) openPnl += (d.price - +t.entry_price) * +t.shares;
   });
   const openSign = openPnl >= 0 ? '+' : '';
 
