@@ -2366,7 +2366,19 @@ function renderDashboard() {
 
   // Calculate totals
   const pk = getProfileKey();
-  const trades = profiles[pk].trades || [];
+  const manualTrades = profiles[pk].trades || [];
+  const atTrades = (profiles[pk].atTrades || []).map(t => ({
+    ticker: t.ticker,
+    entryPrice: +t.entry_price,
+    stopPrice: +t.stop_price,
+    shares: +t.shares,
+    totalShares: +t.shares,
+    entryDate: t.entry_date,
+    dollarRisk: t.initial_dollar_risk || 0,
+    atr: t.atr_at_entry,
+    source: 'autotrader'
+  }));
+  const trades = [...manualTrades, ...atTrades];
   const journal = profiles[pk].journal || [];
   const startEquity = profiles[pk].accountEquity || 0;
   let totalRisk = 0;
@@ -2494,7 +2506,7 @@ function renderSignalTable(tickers) {
       <td class="ticker-cell" style="${tickerCellStyle}"><div class="ticker-logo-wrap">${tickerLogo(ticker)}<span>${ticker}${d.isNewCross ? ' <span style="background:linear-gradient(135deg,#fab387,#f9e2af);color:#1e1e2e;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:800">NEW</span>' : ''}</span></div></td>
       <td style="color:var(--text3);font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.name || ''}</td>
       <td class="price-cell">$${fmt(d.price)}</td>
-      <td class="change-cell ${chClass}">${d.change>=0?'+':''}${fmt(d.change)} (${d.changePct>=0?'+':''}${d.changePct.toFixed(2)}%)</td>
+      <td class="change-cell ${chClass}">${d.changePct>=0?'+':''}${d.changePct.toFixed(2)}%</td>
       <td class="ma-cell">${d.ma10!=null?d.ma10.toFixed(2):'--'}</td>
       <td class="ma-cell">${d.ma20!=null?d.ma20.toFixed(2):'--'}</td>
       <td><span class="signal-badge ${sigClass}">${d.signal}</span></td>
@@ -2523,7 +2535,7 @@ function renderSignalGrid(tickers) {
       <div class="ticker-row"><div style="display:flex;align-items:center;gap:8px">${tickerLogo(ticker)}<span class="ticker">${ticker}</span></div><span class="signal-badge ${d.signal.toLowerCase()}">${d.signal}</span></div>
       <div class="name">${d.name || ticker}</div>
       <div class="price">$${fmt(d.price)}</div>
-      <div class="change ${chClass}">${d.change>=0?'+':''}${fmt(d.change)} (${d.changePct>=0?'+':''}${d.changePct.toFixed(2)}%)</div>
+      <div class="change ${chClass}">${d.changePct>=0?'+':''}${d.changePct.toFixed(2)}%</div>
       <div class="ma-info">
         <div><div class="ma-label">MA10</div><div class="ma-val" style="color:#89b4fa">${d.ma10!=null?d.ma10.toFixed(2):'--'}</div></div>
         <div><div class="ma-label">MA20</div><div class="ma-val" style="color:#94e2d5">${d.ma20!=null?d.ma20.toFixed(2):'--'}</div></div>
@@ -2551,7 +2563,7 @@ function renderScreenerTable() {
     const sigClass = signal === 'LONG' ? 'long' : signal === 'SHORT' ? 'short' : '';
     const chClass  = change != null ? (change >= 0 ? 'up' : 'down') : '';
     const chStr    = change != null
-      ? `${change >= 0 ? '+' : ''}${fmt(change)} (${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%)`
+      ? `${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%`
       : '--';
     let rowBg = '', crossCellHtml = crossDays != null ? crossDays + 'd' : '--';
     if (crossDays === 0) { rowBg = 'background:rgba(249,226,175,0.15);'; crossCellHtml = '<strong style="color:#fab387">TODAY</strong>'; }
@@ -2575,7 +2587,7 @@ function renderScreenerTable() {
       <div class="ticker-row"><div style="display:flex;align-items:center;gap:8px">${tickerLogo(r.ticker)}<span class="ticker">${r.ticker}</span></div><span class="signal-badge ${sigClass}">${signal}</span></div>
       <div class="name">${name}</div>
       <div class="price">$${fmt(price)}</div>
-      ${change != null ? `<div class="change ${chClass}">${change >= 0 ? '+' : ''}${fmt(change)} (${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%)</div>` : ''}
+      ${change != null ? `<div class="change ${chClass}">${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%</div>` : ''}
       <div class="ma-info">
         <div><div class="ma-label">MA10</div><div class="ma-val" style="color:#89b4fa">${ma10 != null ? ma10.toFixed(2) : '--'}</div></div>
         <div><div class="ma-label">MA20</div><div class="ma-val" style="color:#94e2d5">${ma20 != null ? ma20.toFixed(2) : '--'}</div></div>
