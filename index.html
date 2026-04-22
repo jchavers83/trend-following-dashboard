@@ -2235,7 +2235,13 @@ function renderSnapshot(trades, journal) {
   // ── Open positions with live P&L and next pyramid trigger ──
   const today = new Date();
   const COL_OPEN = '52px 44px 64px auto';
-  const openRows = trades.map((t, i) => {
+  const sortedTrades = [...trades].sort((a, b) => {
+    const da = state.tickerData[a.ticker], db = state.tickerData[b.ticker];
+    const pnlA = da ? (da.price - a.entryPrice) * (a.totalShares || a.shares || 0) : 0;
+    const pnlB = db ? (db.price - b.entryPrice) * (b.totalShares || b.shares || 0) : 0;
+    return pnlB - pnlA;
+  });
+  const openRows = sortedTrades.map((t, i) => {
     const d = state.tickerData[t.ticker];
     const currentPrice = d?.price || t.entryPrice;
     const shares = t.totalShares || t.shares || 0;
@@ -2246,7 +2252,7 @@ function renderSnapshot(trades, journal) {
     const nextLayer = (t.pyramidLayers || []).find(l => l.status === 'NEXT ADD' || l.status === 'NEXT');
     const distPct = (nextLayer && currentPrice) ? ((nextLayer.triggerPrice - currentPrice) / currentPrice * 100) : null;
     const nextCell = distPct !== null ? `${distPct > 0 ? '+' : ''}${distPct.toFixed(1)}%` : '—';
-    const border = i < trades.length - 1 ? 'border-bottom:1px solid var(--card-border)' : '';
+    const border = i < sortedTrades.length - 1 ? 'border-bottom:1px solid var(--card-border)' : '';
     return `<div style="display:grid;grid-template-columns:${COL_OPEN};align-items:center;padding:5px 0;${border};gap:10px">
       <span style="font-weight:700;font-family:var(--mono);font-size:12px">${t.ticker}</span>
       <span style="color:var(--text3);font-size:11px;text-align:right">${holdDays}d</span>
@@ -4105,7 +4111,13 @@ function renderIBKRSection(pk) {
     // Open positions
     if (trades.length > 0) {
       html += `<div class="section-header" style="margin-top:4px;margin-bottom:10px"><h2 style="font-size:13px;color:var(--text2)">AutoTrader Positions</h2><span class="count">${trades.length}</span></div>`;
-      trades.forEach(t => {
+      const sortedAtTrades = [...trades].sort((a, b) => {
+        const da = state.tickerData[a.ticker], db = state.tickerData[b.ticker];
+        const pnlA = (da && a.entry_price) ? (da.price - +a.entry_price) * +a.shares : 0;
+        const pnlB = (db && b.entry_price) ? (db.price - +b.entry_price) * +b.shares : 0;
+        return pnlB - pnlA;
+      });
+      sortedAtTrades.forEach(t => {
         const daysHeld = Math.floor((Date.now() - new Date(t.entry_date).getTime()) / 86400000);
         const riskPct = t.account_equity_at_entry > 0 ? (t.initial_dollar_risk / t.account_equity_at_entry * 100).toFixed(1) : '—';
         const layers = t.layers_filled > 0 ? `<span style="font-size:10px;background:rgba(137,180,250,0.15);color:var(--blue);padding:2px 6px;border-radius:3px;font-weight:700">L${t.layers_filled}</span>` : '';
