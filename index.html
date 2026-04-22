@@ -4043,15 +4043,25 @@ function renderPortfolio() {
     </div>
   `;
 
+  // Include AT trades in top summary
+  const atTrades = profiles[pk].atTrades || [];
+  let atUnrealPnl = 0, atRisk = 0;
+  atTrades.forEach(t => {
+    const d = state.tickerData[t.ticker];
+    if (d) atUnrealPnl += (d.price - +t.entry_price) * +t.shares;
+    atRisk += t.initial_dollar_risk || 0;
+  });
+  const totalOpenCount = trades.length + atTrades.length;
+  const totalUnrealPnl = totalPnL + atUnrealPnl;
+  const totalRiskAll = totalRisk + atRisk;
+
   const posTabHtml = `
     <div class="summary-row">
-      <div class="summary-card"><div class="label">Open Trades</div><div class="value">${trades.length}</div></div>
-      <div class="summary-card"><div class="label">Unrealized P&L</div><div class="value ${totalPnL>=0?'green':'red'}">${totalPnL>=0?'+':''}$${fmt(Math.abs(totalPnL))}</div></div>
-      <div class="summary-card"><div class="label">Total $ at Risk</div><div class="value">$${fmt(totalRisk)}</div></div>
+      <div class="summary-card"><div class="label">Open Trades</div><div class="value">${totalOpenCount}</div></div>
+      <div class="summary-card"><div class="label">Unrealized P&L</div><div class="value ${totalUnrealPnl>=0?'green':'red'}">${totalUnrealPnl>=0?'+':''}$${fmt(Math.abs(totalUnrealPnl))}</div></div>
+      <div class="summary-card"><div class="label">Total $ at Risk</div><div class="value">$${fmt(totalRiskAll)}</div></div>
     </div>
-    ${trades.length === 0 && !(profiles[pk].ibkrConnected && profiles[pk].ibkrPositions.length > 0)
-      ? '<div style="text-align:center;padding:40px;color:var(--text3)"><p style="font-size:15px">No open trades</p><p style="margin-top:8px;font-size:13px">Use the Position Size Calculator to enter a new trade, or connect your IBKR account below</p></div>'
-      : tradeCards}
+    ${trades.length === 0 && !(profiles[pk].ibkrConnected && profiles[pk].ibkrPositions.length > 0) ? '' : tradeCards}
     ${renderIBKRSection(pk)}
   `;
 
@@ -4098,12 +4108,10 @@ function renderIBKRSection(pk) {
     // Stats row
     if (stats) {
       const wr = stats.winRate ? stats.winRate.toFixed(0) : '—';
-      const exp = stats.expectancy ? (stats.expectancy >= 0 ? '+' : '') + stats.expectancy.toFixed(2) + 'R' : '—';
       const pnl = stats.totalPnl || 0;
       html += `<div class="ibkr-account-info" style="margin-bottom:14px">
         <div class="stat"><div class="label">Closed Trades</div><div class="val">${stats.closedTrades || 0}</div></div>
         <div class="stat"><div class="label">Win Rate</div><div class="val">${wr}%</div></div>
-        <div class="stat"><div class="label">Expectancy</div><div class="val">${exp}</div></div>
         <div class="stat"><div class="label">Total P&L</div><div class="val" style="color:${pnl>=0?'#26a69a':'#ef5350'}">${pnl>=0?'+':''}$${fmt(Math.abs(pnl))}</div></div>
       </div>`;
     }
