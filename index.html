@@ -538,10 +538,10 @@ const PERMANENT_TICKERS = [...CORE_TICKERS, ...DIVERSIFIERS];
 
 const SCREENS = [
   {id:'dashboard',label:'Signals',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>'},
-  {id:'chart',label:'Chart',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>'},
-{id:'portfolio',label:'Portfolio',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>'},
-{id:'journal',label:'Journal',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>'},
-{id:'settings',label:'Settings',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'}
+  {id:'positions',label:'Positions',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>'},
+  {id:'performance',label:'Performance',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>'},
+  {id:'journal',label:'Journal',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>'},
+  {id:'settings',label:'Settings',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'}
 ];
 
 const CHECKLIST_ITEMS = [
@@ -577,7 +577,7 @@ function loadTickerCache() {
 
 let state = {
   activeProfile: 'Josh',
-  activeScreen: 'dashboard',
+  activeScreen: 'dashboard', // positions/performance are the new portfolio nav items
   selectedTicker: null,
   darkMode: false,
   tickerData: loadTickerCache(), // Restore from localStorage immediately — page renders without waiting
@@ -589,7 +589,7 @@ let state = {
   refreshing: false,
   calcPrefill: null,
   pnlPeriod: 'ALL',
-  portfolioTab: 'performance',
+  portfolioTab: 'positions',
   equityPeriod: 'ALL'
 };
 
@@ -2000,7 +2000,7 @@ function renderHeatGauge() {
 
   let fillColor = '#26a69a'; // green
   if (fillPct >= 85) fillColor = '#ef5350'; // red
-  else if (fillPct >= 60) fillColor = '#fab387'; // amber
+  else if (fillPct >= 50) fillColor = '#ef5350'; // red when heavy
 
   const heatDesc = fillPct < 30 ? 'Light' : fillPct < 60 ? 'Moderate' : fillPct < 85 ? 'Heavy' : 'Max';
   container.innerHTML = `<div class="heat-gauge">
@@ -2041,7 +2041,7 @@ function renderNav() {
     if (s.id === 'dashboard' && (longCount > 0 || shortCount > 0)) {
       badge = `<span class="nav-signal-badge"><span class="badge-long">▲${longCount}</span><span class="badge-short">▼${shortCount}</span></span>`;
     }
-    return `<button class="nav-item${state.activeScreen===s.id?' active':''}" data-screen="${s.id}">${s.icon}<span>${s.label}</span>${badge}</button>`;
+    return `<button class="nav-item${state.activeScreen===s.id?' active':''}" data-screen="${s.id}" onclick="navigateTo('${s.id}')">${s.icon}<span>${s.label}</span>${badge}</button>`;
   }).join('');
   sidebarNav.querySelectorAll('.nav-item').forEach(btn => {
     btn.onclick = () => navigateTo(btn.dataset.screen);
@@ -2113,6 +2113,8 @@ function renderScreen() {
     case 'dashboard': renderDashboard(); break;
     case 'chart': renderChartScreen(); break;
     case 'calculator': renderCalculator(); break;
+    case 'positions': state.portfolioTab = 'positions'; renderPortfolio(); break;
+    case 'performance': state.portfolioTab = 'performance'; renderPortfolio(); break;
     case 'portfolio': renderPortfolio(); break;
     case 'checklist': renderChecklist(); break;
     case 'journal': renderJournal(); break;
@@ -2123,6 +2125,8 @@ function renderScreen() {
 // ─── GAIN BLOCKS ───
 function renderGainBlocks(journal, startEquity) {
   if (!startEquity || startEquity <= 0) return '';
+  const hasData = journal.some(t => t.exitDate);
+  if (!hasData) return '';
   const now = new Date();
   const curYear = now.getFullYear();
   const curMonth = now.getMonth();
@@ -2241,7 +2245,7 @@ function renderSnapshot(trades, journal) {
 
   // ── Open positions with live P&L and next pyramid trigger ──
   const today = new Date();
-  const COL_OPEN = '52px 44px 64px auto';
+  const COL_OPEN = '52px 36px auto';
   const sortedTrades = [...trades].sort((a, b) => {
     const da = state.tickerData[a.ticker], db = state.tickerData[b.ticker];
     const pnlA = da ? (da.price - a.entryPrice) * (a.totalShares || a.shares || 0) : 0;
@@ -2256,14 +2260,10 @@ function renderSnapshot(trades, journal) {
     const pnlSign = pnl >= 0 ? '+' : '';
     const pnlColor = pnl >= 0 ? 'var(--green)' : 'var(--red)';
     const holdDays = t.entryDate ? Math.round((today - new Date(t.entryDate + 'T12:00:00')) / 86400000) : '?';
-    const nextLayer = (t.pyramidLayers || []).find(l => l.status === 'NEXT ADD' || l.status === 'NEXT');
-    const distPct = (nextLayer && currentPrice) ? ((nextLayer.triggerPrice - currentPrice) / currentPrice * 100) : null;
-    const nextCell = distPct !== null ? `${distPct > 0 ? '+' : ''}${distPct.toFixed(1)}%` : '—';
     const border = i < sortedTrades.length - 1 ? 'border-bottom:1px solid var(--card-border)' : '';
     return `<div style="display:grid;grid-template-columns:${COL_OPEN};align-items:center;padding:5px 0;${border};gap:10px">
       <span style="font-weight:700;font-family:var(--mono);font-size:12px">${t.ticker}</span>
       <span style="color:var(--text3);font-size:11px;text-align:right">${holdDays}d</span>
-      <span style="color:var(--text3);font-size:11px;text-align:right">${nextCell}</span>
       <span style="font-weight:700;font-family:var(--mono);font-size:12px;color:${pnlColor};text-align:right">${pnlSign}$${fmt(Math.abs(pnl))}</span>
     </div>`;
   });
@@ -2271,7 +2271,6 @@ function renderSnapshot(trades, journal) {
     ? `<div style="display:grid;grid-template-columns:${COL_OPEN};padding:0 0 4px;gap:10px;border-bottom:1px solid var(--card-border);margin-bottom:1px">
         <span style="font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Ticker</span>
         <span style="font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);text-align:right">Held</span>
-        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);text-align:right">Next+</span>
         <span style="font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);text-align:right">P&amp;L</span>
       </div>` + openRows.join('')
     : '<span style="color:var(--text3);font-size:13px">No open positions</span>';
@@ -2306,7 +2305,7 @@ function renderSnapshot(trades, journal) {
     const d = state.tickerData[t.ticker];
     if (!d || !d.ma10 || !d.ma20) return null;
     const gapPct = Math.abs(d.ma10 - d.ma20) / d.ma20 * 100;
-    if (gapPct > 5) return null;
+    if (gapPct > 2) return null;
     // Direction of approaching cross
     const holdingLong = t.direction !== 'SHORT';
     const approachingBearish = holdingLong && d.ma10 > d.ma20; // long position, MA10 falling toward MA20
@@ -2318,7 +2317,7 @@ function renderSnapshot(trades, journal) {
   const nearCrossHtml = nearCross.length > 0
     ? nearCross.map((n, i) => {
         const label = n.approachingBearish ? 'exit signal' : 'cover signal';
-        const color = n.approachingBearish ? '#df8e1d' : 'var(--green)';
+        const color = n.approachingBearish ? '#ef5350' : 'var(--green)';
         const borderStyle = i < nearCross.length - 1 ? 'border-bottom:1px solid var(--card-border)' : '';
         return `<div style="display:flex;align-items:center;gap:12px;padding:5px 0;${borderStyle}">
           <span style="font-weight:700;font-family:var(--mono);font-size:12px;min-width:48px">${n.ticker}</span>
@@ -4458,25 +4457,13 @@ function renderSettings() {
         <h2 style="margin-bottom:16px">Settings</h2>
         <div style="font-size:13px;color:var(--text3);margin-bottom:16px">Profile: <strong style="color:var(--text)">${state.activeProfile}</strong></div>
         <div class="calc-card">
-          <div class="form-group">
-            <label>Account Equity ($)</label>
-            <input type="number" id="settingsEquity" value="${pf.accountEquity || 100000}" placeholder="100000">
-          </div>
-          <div class="form-group">
-            <label>Risk Per Trade (%)</label>
-            <input type="number" id="settingsRiskPct" value="${pf.riskPct || 1.5}" placeholder="1.5" step="0.1">
-          </div>
-          <div class="form-group">
-            <label>ATR Stop Multiplier</label>
-            <input type="number" id="settingsAtrMult" value="${pf.atrMultiplier || 2}" placeholder="2" step="0.5">
-          </div>
-          <div class="form-group">
-            <label>Max Open Positions</label>
-            <input type="number" id="settingsMaxPos" value="${pf.maxOpenPositions || 20}" placeholder="20">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:16px;line-height:1.6">
+            Trading parameters (risk per trade, ATR multiplier, max positions) are configured on the AutoTrader VPS and apply automatically.
           </div>
           <div class="form-group">
             <label>Max Portfolio Heat (%)</label>
             <input type="number" id="settingsMaxHeat" value="${pf.maxPortfolioHeat || 10}" placeholder="10" step="1">
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">Controls the Risk Used gauge threshold in the sidebar</div>
           </div>
           <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="saveSettings()">Save Settings</button>
         </div>
@@ -4487,21 +4474,11 @@ function renderSettings() {
 
 function saveSettings() {
   const pk = getProfileKey();
-  const equity = parseFloat(document.getElementById('settingsEquity').value);
-  const riskPct = parseFloat(document.getElementById('settingsRiskPct').value);
-  const atrMult = parseFloat(document.getElementById('settingsAtrMult').value);
-  const maxPos = parseInt(document.getElementById('settingsMaxPos').value, 10);
   const maxHeat = parseFloat(document.getElementById('settingsMaxHeat').value);
-
-  if (!isNaN(equity)) profiles[pk].accountEquity = equity;
-  if (!isNaN(riskPct)) profiles[pk].riskPct = riskPct;
-  if (!isNaN(atrMult)) profiles[pk].atrMultiplier = atrMult;
-  if (!isNaN(maxPos)) profiles[pk].maxOpenPositions = maxPos;
   if (!isNaN(maxHeat)) profiles[pk].maxPortfolioHeat = maxHeat;
-
   saveProfiles(profiles);
   showToast('Settings saved');
-  renderNav(); // updates heat gauge
+  renderNav();
 }
 
 // ─── LOGO HELPER ───
