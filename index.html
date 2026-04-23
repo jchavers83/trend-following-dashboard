@@ -2426,15 +2426,17 @@ function renderDashboard() {
     dollarRisk: t.initial_dollar_risk || 0,
     atr: t.atr_at_entry,
     source: 'autotrader',
-    layersFilled: t.layers_filled || 1
+    layersFilled: t.layers_filled || 1,
+    entryEquity: +t.account_equity_at_entry || 0
   }));
   const trades = [...manualTrades, ...atTrades];
   const journal = profiles[pk].journal || [];
+  // accountEquity from IBKR is the net liquidation value (already includes open position market values)
   const startEquity = profiles[pk].accountEquity || 0;
   let totalRisk = 0;
   trades.forEach(t => { totalRisk += t.dollarRisk || 0; });
 
-  // Unrealized P&L from open positions
+  // Unrealized P&L from open positions (entry price vs current price)
   let unrealizedPnl = 0;
   trades.forEach(t => {
     const d = state.tickerData[t.ticker];
@@ -2453,13 +2455,14 @@ function renderDashboard() {
     realizedPnl += t.pnl || 0;
   });
 
-  // Total account value = starting equity + all realized + unrealized
+  // Account value = IBKR net liquidation (already includes unrealized; do NOT add unrealizedPnl again)
   const allTimeRealized = journal.reduce((s, t) => s + (t.pnl || 0), 0);
-  const accountValue = startEquity + allTimeRealized + unrealizedPnl;
+  const accountValue = startEquity + allTimeRealized;
 
-  // Percent gains (denominator = original starting equity, excludes any deposits)
-  const realizedPct = startEquity > 0 ? realizedPnl / startEquity * 100 : null;
-  const unrealizedPct = startEquity > 0 ? unrealizedPnl / startEquity * 100 : null;
+  // Percent gains — use entry equity as denominator (equity when positions were opened)
+  const openEntryEquity = trades.reduce((max, t) => Math.max(max, t.entryEquity || 0), 0) || startEquity;
+  const realizedPct = openEntryEquity > 0 ? realizedPnl / openEntryEquity * 100 : null;
+  const unrealizedPct = openEntryEquity > 0 ? unrealizedPnl / openEntryEquity * 100 : null;
   const fmtPct = (v) => (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
 
   const fmtPnl = (v) => (v >= 0 ? '+' : '') + '$' + fmt(Math.abs(v));
