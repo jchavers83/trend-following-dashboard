@@ -2251,6 +2251,7 @@ function renderSnapshot(trades, journal) {
     const pnlB = db ? (db.price - b.entryPrice) * (b.totalShares || b.shares || 0) : 0;
     return pnlB - pnlA;
   });
+  const lbl = (text) => `<span style="font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);display:block;margin-bottom:2px">${text}</span>`;
   const openRows = sortedTrades.map((t, i) => {
     const d = state.tickerData[t.ticker];
     const curPrice = d?.price;
@@ -2259,36 +2260,40 @@ function renderSnapshot(trades, journal) {
     const pnl = curPrice ? (curPrice - entryP) * shares : 0;
     const pnlSign = pnl >= 0 ? '+' : '';
     const pnlColor = pnl >= 0 ? 'var(--green)' : 'var(--red)';
-    const pctGain = (curPrice && entryP) ? ((curPrice - entryP) / entryP * 100) : null;
+    const dayPct = d?.changePct;
+    const dayColor = dayPct != null ? (dayPct >= 0 ? 'var(--green)' : 'var(--red)') : 'var(--text2)';
     const holdDays = t.entryDate ? Math.round((today - new Date(t.entryDate + 'T12:00:00')) / 86400000) : '?';
-    // Next pyramid add
+    // Next pyramid add (1x ATR above entry)
     const atr = t.atr || 0;
     const stopP = t.stopPrice || 0;
-    const nextAddPrice = entryP + atr; // 1x ATR trigger
+    const nextAddPrice = entryP + atr;
     const nextAddRiskPerShare = nextAddPrice - stopP;
     const nextAddShares = nextAddRiskPerShare > 0 ? Math.floor((t.dollarRisk || 0) / nextAddRiskPerShare) : 0;
     const nextAddCost = nextAddShares * nextAddPrice;
-    const distToNext = curPrice ? ((nextAddPrice - curPrice) / curPrice * 100) : null;
-    const nextStr = nextAddPrice > 0
-      ? `$${fmt(nextAddPrice)} ${distToNext !== null ? `<span style="color:${distToNext<=0?'var(--green)':'var(--text3)'}">(${distToNext>0?'+':''}${distToNext.toFixed(1)}%)</span>` : ''}`
-      : '—';
-    const nextCostStr = nextAddCost > 0 ? `~$${Math.round(nextAddCost).toLocaleString()}` : '—';
+    const distToNext = (curPrice && nextAddPrice) ? ((nextAddPrice - curPrice) / curPrice * 100) : null;
+    const distColor = distToNext !== null && distToNext <= 0 ? 'var(--green)' : 'var(--text2)';
     const border = i < sortedTrades.length - 1 ? 'border-bottom:1px solid var(--card-border)' : '';
-    return `<div style="padding:7px 0;${border}">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-        <span style="font-weight:700;font-family:var(--mono);font-size:12px">${t.ticker}</span>
-        <div style="display:flex;align-items:center;gap:10px">
-          ${curPrice ? `<span style="font-family:var(--mono);font-size:12px">$${fmt(curPrice)}</span>` : ''}
-          ${pctGain !== null ? `<span style="font-size:11px;font-weight:700;color:${pnlColor}">${pctGain>=0?'+':''}${pctGain.toFixed(2)}%</span>` : ''}
-          <span style="font-weight:700;font-family:var(--mono);font-size:12px;color:${pnlColor}">${pnlSign}$${fmt(Math.abs(pnl))}</span>
+    return `<div style="padding:9px 0;${border}">
+      <!-- Row 1: ticker + P&L -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <span style="font-weight:800;font-family:var(--mono);font-size:13px;letter-spacing:.5px">${t.ticker}</span>
+        <div style="text-align:right">
+          ${lbl('Unrealized P&L')}
+          <span style="font-weight:700;font-family:var(--mono);font-size:13px;color:${pnlColor}">${pnlSign}$${fmt(Math.abs(pnl))}</span>
         </div>
       </div>
-      ${nextAddPrice > 0 ? `<div style="display:flex;align-items:center;gap:6px;margin-top:3px">
-        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Next add</span>
-        <span style="font-size:11px;font-family:var(--mono)">${nextStr}</span>
-        <span style="font-size:10px;color:var(--text3)">· ${nextCostStr}</span>
-        <span style="font-size:9px;color:var(--text3)">${holdDays}d held</span>
-      </div>` : `<div style="font-size:10px;color:var(--text3);margin-top:2px">${holdDays}d held</div>`}
+      <!-- Row 2: price stats -->
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:${nextAddPrice>0?'6':'0'}px">
+        ${curPrice ? `<div>${lbl('Price')}<span style="font-family:var(--mono);font-size:12px">$${fmt(curPrice)}</span></div>` : ''}
+        ${dayPct != null ? `<div>${lbl('Day')}<span style="font-family:var(--mono);font-size:12px;color:${dayColor}">${dayPct>=0?'+':''}${dayPct.toFixed(2)}%</span></div>` : ''}
+        <div>${lbl('Held')}<span style="font-size:12px;color:var(--text2)">${holdDays}d</span></div>
+      </div>
+      <!-- Row 3: next add -->
+      ${nextAddPrice > 0 ? `<div style="display:flex;gap:16px;flex-wrap:wrap;padding:6px 8px;background:rgba(137,180,250,0.06);border-radius:6px;border:1px solid rgba(137,180,250,0.12)">
+        <div>${lbl('Next Add At')}<span style="font-family:var(--mono);font-size:12px">$${fmt(nextAddPrice)}</span></div>
+        ${distToNext !== null ? `<div>${lbl('Away')}<span style="font-family:var(--mono);font-size:12px;color:${distColor}">${distToNext>0?'+':''}${distToNext.toFixed(1)}%</span></div>` : ''}
+        ${nextAddCost > 0 ? `<div>${lbl('Layer Cost')}<span style="font-family:var(--mono);font-size:12px">~$${Math.round(nextAddCost).toLocaleString()}</span></div>` : ''}
+      </div>` : ''}
     </div>`;
   });
   const openPositionsHtml = openRows.length > 0
@@ -2550,9 +2555,11 @@ function renderSignalTable(tickers) {
       const nextAddCost = nextAddShares * nextAddPrice;
       const dist = d.price ? ((nextAddPrice - d.price) / d.price * 100) : null;
       const distColor = dist !== null && dist <= 0 ? '#26a69a' : 'var(--text3)';
-      nextAddHtml = `<div style="font-size:10px;color:var(--text3);margin-top:2px">
-        <span style="background:rgba(137,180,250,0.15);color:#89b4fa;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:700;margin-right:4px">IN</span>
-        next add $${fmt(nextAddPrice)} ${dist!==null?`<span style="color:${distColor}">(${dist>0?'+':''}${dist.toFixed(1)}%)</span>`:''} · ~$${Math.round(nextAddCost).toLocaleString()}
+      nextAddHtml = `<div style="font-size:10px;color:var(--text3);margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <span style="background:rgba(137,180,250,0.15);color:#89b4fa;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:700">IN</span>
+        <span>Next add <strong style="color:var(--text2);font-family:var(--mono)">$${fmt(nextAddPrice)}</strong></span>
+        ${dist!==null?`<span style="color:${distColor}">${dist>0?'+':''}${dist.toFixed(1)}% away</span>`:''}
+        ${nextAddCost>0?`<span>· <strong style="color:var(--text2);font-family:var(--mono)">~$${Math.round(nextAddCost).toLocaleString()}</strong> layer cost</span>`:''}
       </div>`;
     }
 
