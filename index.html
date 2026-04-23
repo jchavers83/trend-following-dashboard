@@ -4076,16 +4076,11 @@ function renderPortfolio() {
     ${renderIBKRSection(pk)}
   `;
 
+  const pageTitle = state.activeScreen === 'performance' ? 'Performance' : 'Portfolio';
   content.innerHTML = `
     <div class="screen active">
-      <h2 style="margin-bottom:14px">Portfolio</h2>
-      <div class="port-tabs">
-        <button class="port-tab${state.portfolioTab==='performance'?' active':''}" onclick="setPortfolioTab('performance')">Performance</button>
-        <button class="port-tab${state.portfolioTab==='positions'?' active':''}" onclick="setPortfolioTab('positions')">Positions${trades.length>0?' ('+trades.length+')':''}</button>
-      </div>
-      <div id="portTabContent">
-        ${state.portfolioTab === 'performance' ? perfTabHtml : posTabHtml}
-      </div>
+      <h2 style="margin-bottom:14px">${pageTitle}</h2>
+      ${state.portfolioTab === 'performance' ? perfTabHtml : posTabHtml}
     </div>
   `;
 
