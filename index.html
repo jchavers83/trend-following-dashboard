@@ -2245,7 +2245,6 @@ function renderSnapshot(trades, journal) {
 
   // ── Open positions with live P&L and next pyramid trigger ──
   const today = new Date();
-  const COL_OPEN = '52px 36px auto';
   const sortedTrades = [...trades].sort((a, b) => {
     const da = state.tickerData[a.ticker], db = state.tickerData[b.ticker];
     const pnlA = da ? (da.price - a.entryPrice) * (a.totalShares || a.shares || 0) : 0;
@@ -2254,25 +2253,46 @@ function renderSnapshot(trades, journal) {
   });
   const openRows = sortedTrades.map((t, i) => {
     const d = state.tickerData[t.ticker];
-    const currentPrice = d?.price || t.entryPrice;
+    const curPrice = d?.price;
+    const entryP = t.entryPrice || 0;
     const shares = t.totalShares || t.shares || 0;
-    const pnl = (currentPrice - t.entryPrice) * shares;
+    const pnl = curPrice ? (curPrice - entryP) * shares : 0;
     const pnlSign = pnl >= 0 ? '+' : '';
     const pnlColor = pnl >= 0 ? 'var(--green)' : 'var(--red)';
+    const pctGain = (curPrice && entryP) ? ((curPrice - entryP) / entryP * 100) : null;
     const holdDays = t.entryDate ? Math.round((today - new Date(t.entryDate + 'T12:00:00')) / 86400000) : '?';
+    // Next pyramid add
+    const atr = t.atr || 0;
+    const stopP = t.stopPrice || 0;
+    const nextAddPrice = entryP + atr; // 1x ATR trigger
+    const nextAddRiskPerShare = nextAddPrice - stopP;
+    const nextAddShares = nextAddRiskPerShare > 0 ? Math.floor((t.dollarRisk || 0) / nextAddRiskPerShare) : 0;
+    const nextAddCost = nextAddShares * nextAddPrice;
+    const distToNext = curPrice ? ((nextAddPrice - curPrice) / curPrice * 100) : null;
+    const nextStr = nextAddPrice > 0
+      ? `$${fmt(nextAddPrice)} ${distToNext !== null ? `<span style="color:${distToNext<=0?'var(--green)':'var(--text3)'}">(${distToNext>0?'+':''}${distToNext.toFixed(1)}%)</span>` : ''}`
+      : '—';
+    const nextCostStr = nextAddCost > 0 ? `~$${Math.round(nextAddCost).toLocaleString()}` : '—';
     const border = i < sortedTrades.length - 1 ? 'border-bottom:1px solid var(--card-border)' : '';
-    return `<div style="display:grid;grid-template-columns:${COL_OPEN};align-items:center;padding:5px 0;${border};gap:10px">
-      <span style="font-weight:700;font-family:var(--mono);font-size:12px">${t.ticker}</span>
-      <span style="color:var(--text3);font-size:11px;text-align:right">${holdDays}d</span>
-      <span style="font-weight:700;font-family:var(--mono);font-size:12px;color:${pnlColor};text-align:right">${pnlSign}$${fmt(Math.abs(pnl))}</span>
+    return `<div style="padding:7px 0;${border}">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <span style="font-weight:700;font-family:var(--mono);font-size:12px">${t.ticker}</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          ${curPrice ? `<span style="font-family:var(--mono);font-size:12px">$${fmt(curPrice)}</span>` : ''}
+          ${pctGain !== null ? `<span style="font-size:11px;font-weight:700;color:${pnlColor}">${pctGain>=0?'+':''}${pctGain.toFixed(2)}%</span>` : ''}
+          <span style="font-weight:700;font-family:var(--mono);font-size:12px;color:${pnlColor}">${pnlSign}$${fmt(Math.abs(pnl))}</span>
+        </div>
+      </div>
+      ${nextAddPrice > 0 ? `<div style="display:flex;align-items:center;gap:6px;margin-top:3px">
+        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Next add</span>
+        <span style="font-size:11px;font-family:var(--mono)">${nextStr}</span>
+        <span style="font-size:10px;color:var(--text3)">· ${nextCostStr}</span>
+        <span style="font-size:9px;color:var(--text3)">${holdDays}d held</span>
+      </div>` : `<div style="font-size:10px;color:var(--text3);margin-top:2px">${holdDays}d held</div>`}
     </div>`;
   });
   const openPositionsHtml = openRows.length > 0
-    ? `<div style="display:grid;grid-template-columns:${COL_OPEN};padding:0 0 4px;gap:10px;border-bottom:1px solid var(--card-border);margin-bottom:1px">
-        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Ticker</span>
-        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);text-align:right">Held</span>
-        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);text-align:right">P&amp;L</span>
-      </div>` + openRows.join('')
+    ? openRows.join('')
     : '<span style="color:var(--text3);font-size:13px">No open positions</span>';
 
   // ── Last 5 closed trades ──
@@ -2492,6 +2512,11 @@ function renderScreenerProgress() {
 }
 
 function renderSignalTable(tickers) {
+  // Build AT position lookup for next-add annotations
+  const pk = getProfileKey();
+  const atMap = {};
+  (profiles[pk].atTrades || []).forEach(t => { atMap[t.ticker] = t; });
+
   let rows = '';
   tickers.forEach(ticker => {
     const d = state.tickerData[ticker];
@@ -2506,7 +2531,6 @@ function renderSignalTable(tickers) {
     const days = d.daysSinceCross;
     let rowBg = '';
     let crossCellHtml = days != null ? days + 'd' : '--';
-    let tickerCellStyle = '';
     if (days === 0) {
       rowBg = 'background:rgba(249,226,175,0.15);';
       crossCellHtml = '<strong style="color:#fab387">TODAY</strong>';
@@ -2515,8 +2539,25 @@ function renderSignalTable(tickers) {
       crossCellHtml = '<span style="color:#fab387">1d</span>';
     }
 
+    // Next-add annotation for open AT positions
+    const at = atMap[ticker];
+    let nextAddHtml = '';
+    if (at) {
+      const entryP = +at.entry_price, atr = +at.atr_at_entry, stopP = +at.stop_price;
+      const nextAddPrice = entryP + atr;
+      const riskPerShare = nextAddPrice - stopP;
+      const nextAddShares = riskPerShare > 0 ? Math.floor(at.initial_dollar_risk / riskPerShare) : 0;
+      const nextAddCost = nextAddShares * nextAddPrice;
+      const dist = d.price ? ((nextAddPrice - d.price) / d.price * 100) : null;
+      const distColor = dist !== null && dist <= 0 ? '#26a69a' : 'var(--text3)';
+      nextAddHtml = `<div style="font-size:10px;color:var(--text3);margin-top:2px">
+        <span style="background:rgba(137,180,250,0.15);color:#89b4fa;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:700;margin-right:4px">IN</span>
+        next add $${fmt(nextAddPrice)} ${dist!==null?`<span style="color:${distColor}">(${dist>0?'+':''}${dist.toFixed(1)}%)</span>`:''} · ~$${Math.round(nextAddCost).toLocaleString()}
+      </div>`;
+    }
+
     rows += `<tr onclick="navigateTo('chart',{ticker:'${ticker}'})" style="${rowBg}">
-      <td class="ticker-cell" style="${tickerCellStyle}"><div class="ticker-logo-wrap">${tickerLogo(ticker)}<span>${ticker}${d.isNewCross ? ' <span style="background:linear-gradient(135deg,#fab387,#f9e2af);color:#1e1e2e;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:800">NEW</span>' : ''}</span></div></td>
+      <td class="ticker-cell"><div class="ticker-logo-wrap">${tickerLogo(ticker)}<span>${ticker}${d.isNewCross ? ' <span style="background:linear-gradient(135deg,#fab387,#f9e2af);color:#1e1e2e;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:800">NEW</span>' : ''}</span></div>${nextAddHtml}</td>
       <td style="color:var(--text3);font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.name || ''}</td>
       <td class="price-cell">$${fmt(d.price)}</td>
       <td class="change-cell ${chClass}">${d.changePct>=0?'+':''}${d.changePct.toFixed(2)}%</td>
